@@ -3,7 +3,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Send, Brain, User, Paperclip, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useState, useRef } from "react";
+import { useState, useRef, type ChangeEvent } from "react";
+import type { Dispatch, SetStateAction } from "react";
 import { Badge } from "@/components/ui/badge";
 import { ChatVisualization } from "./ChatVisualization";
 
@@ -147,14 +148,47 @@ function parseBedrockTraces(traces: BedrockTrace[]): ChatMessage[] {
   return messages;
 }
 
-export function CFOChat() {
-  const [inputValue, setInputValue] = useState("");
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
+interface CFOChatProps {
+  hideHeader?: boolean;
+  messages?: ChatMessage[];
+  setMessages?: Dispatch<SetStateAction<ChatMessage[]>>;
+  inputValue?: string;
+  setInputValue?: Dispatch<SetStateAction<string>>;
+  isProcessing?: boolean;
+  setIsProcessing?: Dispatch<SetStateAction<boolean>>;
+  uploadedFiles?: UploadedFile[];
+  setUploadedFiles?: Dispatch<SetStateAction<UploadedFile[]>>;
+}
+
+export function CFOChat({
+  hideHeader = false,
+  messages: externalMessages,
+  setMessages: externalSetMessages,
+  inputValue: externalInputValue,
+  setInputValue: externalSetInputValue,
+  isProcessing: externalIsProcessing,
+  setIsProcessing: externalSetIsProcessing,
+  uploadedFiles: externalUploadedFiles,
+  setUploadedFiles: externalSetUploadedFiles,
+}: CFOChatProps = {}) {
+  // Use external state if provided, otherwise use internal state
+  const [internalInputValue, setInternalInputValue] = useState("");
+  const [internalMessages, setInternalMessages] = useState<ChatMessage[]>([]);
+  const [internalIsProcessing, setInternalIsProcessing] = useState(false);
+  const [internalUploadedFiles, setInternalUploadedFiles] = useState<UploadedFile[]>([]);
+  
+  const inputValue = externalInputValue !== undefined ? externalInputValue : internalInputValue;
+  const setInputValue = externalSetInputValue || setInternalInputValue;
+  const messages = externalMessages !== undefined ? externalMessages : internalMessages;
+  const setMessages = externalSetMessages || setInternalMessages;
+  const isProcessing = externalIsProcessing !== undefined ? externalIsProcessing : internalIsProcessing;
+  const setIsProcessing = externalSetIsProcessing || setInternalIsProcessing;
+  const uploadedFiles = externalUploadedFiles !== undefined ? externalUploadedFiles : internalUploadedFiles;
+  const setUploadedFiles = externalSetUploadedFiles || setInternalUploadedFiles;
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = (e: ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []) as File[];
     files.forEach((file) => {
       const fileId = `${Date.now()}-${Math.random()}`;
@@ -345,14 +379,16 @@ export function CFOChat() {
 
   return (
     <Card className="border-border/50 h-full flex flex-col overflow-hidden">
-      <CardHeader className="border-b border-border/50 flex-shrink-0">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-xl font-semibold">Autonomous CFO Agent</CardTitle>
-          <Button onClick={handleLoadSample} variant="outline" size="sm">
-            Load Sample
-          </Button>
-        </div>
-      </CardHeader>
+      {!hideHeader && (
+        <CardHeader className="border-b border-border/50 flex-shrink-0">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-xl font-semibold">Autonomous CFO Agent</CardTitle>
+            <Button onClick={handleLoadSample} variant="outline" size="sm">
+              Load Sample
+            </Button>
+          </div>
+        </CardHeader>
+      )}
       <CardContent className="flex-1 flex flex-col p-0 min-h-0">
         {/* Messages area - scrollable */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
