@@ -527,8 +527,10 @@ export function CFOChat({
                 <div className="flex justify-start">
                   <div
                     className={cn(
-                      "bg-muted text-foreground rounded-lg px-4 py-3 text-sm w-fit",
-                      isExpanded ? "max-w-[50vw]" : "max-w-[85%]"
+                      "bg-muted text-foreground rounded-lg px-4 py-3 text-sm",
+                      isExpanded
+                        ? "w-full max-w-[80vw]"
+                        : "w-fit max-w-[85%]"
                     )}
                   >
                     <div className="flex items-center gap-2 mb-2">

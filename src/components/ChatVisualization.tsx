@@ -70,12 +70,17 @@ export function ChatVisualization({ data, compact = false }: ChatVisualizationPr
 
   // Render each chart type independently
   const renderLineChart = (enlarged = false) => {
-    const height = enlarged ? 500 : (compact ? 200 : 300);
+    const height = enlarged ? 500 : (compact ? 200 : 320);
     const chartData = processedData.timeSeriesData || processedData.lineChartData;
     if (!chartData) return null;
 
     return (
-      <div className="relative border border-border/50 rounded-lg bg-card p-3 mt-2">
+      <div
+        className={cn(
+          "relative border border-border/50 rounded-lg bg-card p-3 mt-2",
+          compact ? "max-w-md" : "w-full"
+        )}
+      >
         {!enlarged && (
           <div className="absolute top-2 right-2 z-10">
             <Button
@@ -125,12 +130,17 @@ export function ChatVisualization({ data, compact = false }: ChatVisualizationPr
   };
 
   const renderBarChart = (enlarged = false) => {
-    const height = enlarged ? 500 : (compact ? 200 : 300);
+    const height = enlarged ? 500 : (compact ? 200 : 320);
     const chartData = processedData.barChartData || processedData.timeSeriesData;
     if (!chartData) return null;
 
     return (
-      <div className="relative border border-border/50 rounded-lg bg-card p-3 mt-2">
+      <div
+        className={cn(
+          "relative border border-border/50 rounded-lg bg-card p-3 mt-2",
+          compact ? "max-w-md" : "w-full"
+        )}
+      >
         {!enlarged && (
           <div className="absolute top-2 right-2 z-10">
             <Button
@@ -176,11 +186,16 @@ export function ChatVisualization({ data, compact = false }: ChatVisualizationPr
   };
 
   const renderPieChart = (enlarged = false) => {
-    const height = enlarged ? 500 : (compact ? 200 : 300);
+    const height = enlarged ? 500 : (compact ? 220 : 360);
     if (!processedData.pieChartData) return null;
 
     return (
-      <div className="relative border border-border/50 rounded-lg bg-card p-3 mt-2">
+      <div
+        className={cn(
+          "relative border border-border/50 rounded-lg bg-card p-3 mt-2",
+          compact ? "max-w-md" : "w-full"
+        )}
+      >
         {!enlarged && (
           <div className="absolute top-2 right-2 z-10">
             <Button
@@ -202,7 +217,7 @@ export function ChatVisualization({ data, compact = false }: ChatVisualizationPr
               cy="50%"
               labelLine={false}
               label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-              outerRadius={enlarged ? 150 : 80}
+              outerRadius={enlarged ? 180 : compact ? 80 : 130}
               fill="hsl(var(--primary))"
               dataKey="value"
             >
