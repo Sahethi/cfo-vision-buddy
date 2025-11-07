@@ -590,7 +590,7 @@ export function CFOChat({
         >
           {messages.length === 0 && (
             <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
-              Click "Load Sample" to see a sample conversation or ask a question below
+              Ask your CFO agent anything...
             </div>
           )}
           {messages.map((message, index) => (

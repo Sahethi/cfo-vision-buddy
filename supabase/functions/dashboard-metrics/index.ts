@@ -51,33 +51,55 @@ serve(async (req) => {
     const url = new URL(req.url);
     const sessionId = url.searchParams.get("sessionId") || crypto.randomUUID();
 
-    // Query the Bedrock Agent for dashboard metrics and available data types
-    const prompt = `Analyze the knowledge base and provide:
-1. Available financial metrics
-2. Data types and categories present
-3. Key financial indicators
+    // Comprehensive prompt to extract all financial data and insights
+    const prompt = `You are analyzing a financial knowledge base. Extract ALL available financial data and return ONLY a JSON object with this exact structure:
 
-Return a JSON object with this structure:
 {
   "metrics": {
-    "cashOnHand": <number or null>,
-    "monthlyBurnRate": <number or null>,
-    "overdueInvoices": <number or null>,
-    "revenue": <number or null>,
-    "expenses": <number or null>,
-    "profit": <number or null>,
-    "accountsReceivable": <number or null>,
-    "accountsPayable": <number or null>
+    "cashOnHand": <current cash balance or null>,
+    "monthlyBurnRate": <average monthly expenses or null>,
+    "overdueInvoices": <total amount of overdue invoices or null>,
+    "revenue": <total revenue/income or null>,
+    "expenses": <total expenses or null>,
+    "profit": <revenue minus expenses or null>,
+    "accountsReceivable": <total AR or null>,
+    "accountsPayable": <total AP or null>
   },
-  "dataTypes": ["transactions", "invoices", "expenses", "revenue", etc.],
+  "statistics": {
+    "totalTransactions": <total number of transactions or null>,
+    "averageTransactionSize": <average transaction amount or null>,
+    "largestTransaction": <largest single transaction amount or null>,
+    "transactionCount": <number of transactions or null>,
+    "invoiceCount": <number of invoices or null>,
+    "expenseCount": <number of expense records or null>
+  },
+  "topEntities": {
+    "topVendors": [{"name": "<vendor name>", "amount": <total amount>}, ...],
+    "topCustomers": [{"name": "<customer name>", "amount": <total amount>}, ...],
+    "topCategories": [{"name": "<category>", "amount": <total amount>, "percentage": <percentage>}, ...]
+  },
+  "dataTypes": ["transactions", "invoices", "expenses", "revenue", "payments", etc.],
   "availableCategories": ["category1", "category2", etc.],
   "timeRange": {
     "start": "YYYY-MM-DD",
     "end": "YYYY-MM-DD"
+  },
+  "financialHealth": {
+    "profitMargin": <profit/revenue * 100 or null>,
+    "expenseRatio": <expenses/revenue * 100 or null>,
+    "cashRunway": <cashOnHand/monthlyBurnRate in months or null>,
+    "arTurnover": <revenue/accountsReceivable or null>
   }
 }
 
-Only return the JSON object, no additional text.`;
+CRITICAL INSTRUCTIONS:
+1. Search through ALL documents, transactions, invoices, expenses, payments, and financial records
+2. Calculate all metrics by aggregating relevant data
+3. For topEntities: Extract top 5 vendors, customers, and categories by total amount
+4. For statistics: Count all transactions, calculate averages, find largest transaction
+5. For financialHealth: Calculate ratios and health indicators
+6. If any data is missing, use null for metrics or empty arrays for lists
+7. Return ONLY the JSON object, no markdown, no explanations, no code blocks`;
 
     const command = new InvokeAgentCommand({
       agentId: AWS_BEDROCK_AGENT_ID!,
@@ -100,7 +122,7 @@ Only return the JSON object, no additional text.`;
     }
 
     // Try to parse JSON from the response
-    let metrics = null;
+    let metrics: any = null;
     try {
       // Look for JSON in the response
       const jsonMatch = bedrockResponseText.match(/\{[\s\S]*\}/);
@@ -130,23 +152,53 @@ Only return the JSON object, no additional text.`;
       );
     }
 
-    // Return formatted metrics with metadata
+    // Extract and calculate metrics
+    const extractedMetrics = {
+      cashOnHand: metrics.metrics?.cashOnHand ?? metrics.cashOnHand ?? null,
+      monthlyBurnRate: metrics.metrics?.monthlyBurnRate ?? metrics.monthlyBurnRate ?? null,
+      overdueInvoices: metrics.metrics?.overdueInvoices ?? metrics.overdueInvoices ?? null,
+      revenue: metrics.metrics?.revenue ?? metrics.revenue ?? null,
+      expenses: metrics.metrics?.expenses ?? metrics.expenses ?? null,
+      profit: metrics.metrics?.profit ?? (metrics.metrics?.revenue && metrics.metrics?.expenses 
+        ? metrics.metrics.revenue - metrics.metrics.expenses 
+        : (metrics.revenue && metrics.expenses ? metrics.revenue - metrics.expenses : null)),
+      accountsReceivable: metrics.metrics?.accountsReceivable ?? metrics.accountsReceivable ?? null,
+      accountsPayable: metrics.metrics?.accountsPayable ?? metrics.accountsPayable ?? null,
+    };
+
+    // Calculate financial health indicators
+    const financialHealth = metrics.financialHealth || {};
+    if (!financialHealth.profitMargin && extractedMetrics.revenue && extractedMetrics.profit !== null) {
+      financialHealth.profitMargin = extractedMetrics.revenue > 0 
+        ? (extractedMetrics.profit / extractedMetrics.revenue) * 100 
+        : null;
+    }
+    if (!financialHealth.expenseRatio && extractedMetrics.revenue && extractedMetrics.expenses) {
+      financialHealth.expenseRatio = extractedMetrics.revenue > 0 
+        ? (extractedMetrics.expenses / extractedMetrics.revenue) * 100 
+        : null;
+    }
+    if (!financialHealth.cashRunway && extractedMetrics.cashOnHand && extractedMetrics.monthlyBurnRate) {
+      financialHealth.cashRunway = extractedMetrics.monthlyBurnRate > 0 
+        ? extractedMetrics.cashOnHand / extractedMetrics.monthlyBurnRate 
+        : null;
+    }
+
+    // Return formatted metrics with comprehensive data
     return new Response(
       JSON.stringify({
-        metrics: {
-          cashOnHand: metrics.metrics?.cashOnHand ?? metrics.cashOnHand ?? null,
-          monthlyBurnRate: metrics.metrics?.monthlyBurnRate ?? metrics.monthlyBurnRate ?? null,
-          overdueInvoices: metrics.metrics?.overdueInvoices ?? metrics.overdueInvoices ?? null,
-          revenue: metrics.metrics?.revenue ?? metrics.revenue ?? null,
-          expenses: metrics.metrics?.expenses ?? metrics.expenses ?? null,
-          profit: metrics.metrics?.profit ?? metrics.profit ?? null,
-          accountsReceivable: metrics.metrics?.accountsReceivable ?? metrics.accountsReceivable ?? null,
-          accountsPayable: metrics.metrics?.accountsPayable ?? metrics.accountsPayable ?? null,
+        metrics: extractedMetrics,
+        statistics: metrics.statistics || {},
+        topEntities: metrics.topEntities || {
+          topVendors: [],
+          topCustomers: [],
+          topCategories: []
         },
+        financialHealth: financialHealth,
         dataTypes: metrics.dataTypes || [],
         availableCategories: metrics.availableCategories || [],
         timeRange: metrics.timeRange || null,
-        sessionId: sessionId, // Include session ID in response body
+        sessionId: sessionId,
       }),
       {
         headers: { 

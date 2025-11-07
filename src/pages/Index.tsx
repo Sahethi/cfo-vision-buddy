@@ -4,7 +4,17 @@ import { KPICard } from "@/components/KPICard";
 import { CashFlowChart } from "@/components/CashFlowChart";
 import { ExpandableChat } from "@/components/ExpandableChat";
 import { DataVisualization } from "@/components/DataVisualization";
-import { TrendingUp, DollarSign, AlertCircle, TrendingDown, Receipt, CreditCard, Wallet, BarChart3 } from "lucide-react";
+import { TrendingUp, DollarSign, AlertCircle, TrendingDown, Receipt, CreditCard, Wallet, BarChart3, Users, FileText, Activity, Percent, Calendar, Building2, ShoppingCart } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { 
+  kpiData, 
+  monthlyData, 
+  yearlyData, 
+  categoryBreakdown, 
+  topVendors, 
+  topCustomers 
+} from "@/data/hardcodedMetrics";
 
 interface DashboardMetrics {
   cashOnHand: number | null;
@@ -17,11 +27,61 @@ interface DashboardMetrics {
   accountsPayable: number | null;
 }
 
+interface Statistics {
+  totalTransactions?: number | null;
+  averageTransactionSize?: number | null;
+  largestTransaction?: number | null;
+  transactionCount?: number | null;
+  invoiceCount?: number | null;
+  expenseCount?: number | null;
+}
+
+interface TopEntity {
+  name: string;
+  amount: number;
+  percentage?: number;
+}
+
+interface TopEntities {
+  topVendors?: TopEntity[];
+  topCustomers?: TopEntity[];
+  topCategories?: TopEntity[];
+}
+
+interface FinancialHealth {
+  profitMargin?: number | null;
+  expenseRatio?: number | null;
+  cashRunway?: number | null;
+  arTurnover?: number | null;
+}
+
 interface DashboardData {
   metrics: DashboardMetrics;
+  statistics?: Statistics;
+  topEntities?: TopEntities;
+  financialHealth?: FinancialHealth;
   dataTypes: string[];
   availableCategories: string[];
   timeRange: { start: string; end: string } | null;
+  monthlyData?: Array<{
+    month: string;
+    income: number;
+    expenses: number;
+    net: number;
+    cashFlow?: number;
+  }>;
+  yearlyData?: Array<{
+    year: string;
+    income: number;
+    expenses: number;
+    net: number;
+    cashFlow?: number;
+  }>;
+  categoryBreakdown?: Array<{
+    category: string;
+    amount: number;
+    percentage: number;
+  }>;
 }
 
 const Index = () => {
@@ -42,79 +102,86 @@ const Index = () => {
     return sessionId;
   };
 
-  // Fetch dashboard metrics from knowledge base
+  // Use hardcoded data instead of API call
   useEffect(() => {
-    const fetchMetrics = async () => {
+    const loadHardcodedData = () => {
       if (activeView !== "dashboard") return;
 
       setMetricsLoading(true);
       setMetricsError(null);
 
       try {
-        const sessionId = getSessionId();
-        const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/dashboard-metrics?sessionId=${sessionId}`;
-        const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-
-        const response = await fetch(apiUrl, {
-          method: "GET",
-          headers: {
-            apikey: supabaseKey || "",
-            Authorization: `Bearer ${supabaseKey || ""}`,
-          },
-        });
-
-        const data = await response.json();
+        // Calculate additional metrics from hardcoded data
+        const profit = kpiData.totalRevenue - kpiData.totalExpenses;
+        const averageMonthlyRevenue = kpiData.totalRevenue / 6;
+        const averageMonthlyExpenses = kpiData.totalExpenses / 6;
+        const estimatedCashOnHand = 50000 + kpiData.netCashFlow; // Starting with 50k estimate
+        const cashRunway = estimatedCashOnHand / averageMonthlyExpenses;
+        const profitMargin = (profit / kpiData.totalRevenue) * 100;
+        const expenseRatio = (kpiData.totalExpenses / kpiData.totalRevenue) * 100;
         
-        // Log session ID from response headers for debugging
-        const sessionIdFromHeader = response.headers.get("X-Session-Id");
-        console.log("Response Headers - X-Session-Id:", sessionIdFromHeader);
-        console.log("All Response Headers:", Object.fromEntries(response.headers.entries()));
-        
-        if (!response.ok || data.error) {
-          const errorMessage = data.error || data.message || `HTTP ${response.status}: ${response.statusText}`;
-          throw new Error(errorMessage);
-        }
+        // Estimate transaction counts (assuming average transaction sizes)
+        const avgTransactionSize = 500;
+        const totalTransactions = Math.round(kpiData.totalRevenue / avgTransactionSize);
+        const invoiceCount = Math.round(kpiData.totalRevenue / 2000); // Assuming avg invoice ~$2000
+        const expenseCount = Math.round(kpiData.totalExpenses / 300); // Assuming avg expense ~$300
 
-        setDashboardData({
-          metrics: data.metrics || {
-            cashOnHand: null,
-            monthlyBurnRate: null,
-            overdueInvoices: null,
-            revenue: null,
-            expenses: null,
-            profit: null,
-            accountsReceivable: null,
-            accountsPayable: null,
-          },
-          dataTypes: data.dataTypes || [],
-          availableCategories: data.availableCategories || [],
-          timeRange: data.timeRange || null,
-        });
-      } catch (error) {
-        console.error("Error fetching dashboard metrics:", error);
-        setMetricsError(error instanceof Error ? error.message : "Failed to load metrics");
-        // Set default values on error
-        setDashboardData({
+        // Transform hardcoded data to match DashboardData interface
+        const data: DashboardData = {
           metrics: {
-            cashOnHand: null,
-            monthlyBurnRate: null,
-            overdueInvoices: null,
-            revenue: null,
-            expenses: null,
-            profit: null,
-            accountsReceivable: null,
-            accountsPayable: null,
+            cashOnHand: estimatedCashOnHand,
+            monthlyBurnRate: averageMonthlyExpenses,
+            overdueInvoices: kpiData.complianceFlags > 0 ? 5000 : null, // Estimate overdue based on compliance flags
+            revenue: kpiData.totalRevenue,
+            expenses: kpiData.totalExpenses,
+            profit: profit,
+            accountsReceivable: kpiData.totalRevenue * 0.3, // Estimate 30% of revenue as AR
+            accountsPayable: kpiData.totalExpenses * 0.2, // Estimate 20% of expenses as AP
           },
-          dataTypes: [],
-          availableCategories: [],
-          timeRange: null,
-        });
-      } finally {
+          statistics: {
+            totalTransactions: totalTransactions,
+            averageTransactionSize: avgTransactionSize,
+            invoiceCount: invoiceCount,
+            expenseCount: expenseCount,
+          },
+          topEntities: {
+            topVendors: topVendors,
+            topCustomers: topCustomers,
+            topCategories: categoryBreakdown.map(cat => ({
+              name: cat.category,
+              amount: cat.amount,
+              percentage: cat.percentage,
+            })),
+          },
+          financialHealth: {
+            profitMargin: profitMargin,
+            expenseRatio: expenseRatio,
+            cashRunway: cashRunway,
+          },
+          dataTypes: ["Income", "Expenses", "Transactions", "Invoices"],
+          availableCategories: categoryBreakdown.map(cat => cat.category),
+          timeRange: {
+            start: "2025-06-01",
+            end: "2025-11-30",
+          },
+          monthlyData: monthlyData,
+          yearlyData: yearlyData,
+          categoryBreakdown: categoryBreakdown,
+        };
+
+        // Simulate a small delay for better UX
+        setTimeout(() => {
+          setDashboardData(data);
+          setMetricsLoading(false);
+        }, 300);
+      } catch (error) {
+        console.error("Error loading hardcoded data:", error);
+        setMetricsError(error instanceof Error ? error.message : "Failed to load metrics");
         setMetricsLoading(false);
       }
     };
 
-    fetchMetrics();
+    loadHardcodedData();
   }, [activeView]);
 
   return (
@@ -130,9 +197,31 @@ const Index = () => {
             {activeView === "dashboard" && (
               <>
                 {/* Welcome Header */}
+                <div className="space-y-2">
                 <div>
                   <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Welcome, Business Owner</h1>
                   <p className="text-muted-foreground mt-1 text-sm sm:text-base">Here's your financial overview</p>
+                  </div>
+                  {/* Quick Insights Summary */}
+                  {dashboardData && (dashboardData.metrics.revenue !== null || dashboardData.metrics.expenses !== null || dashboardData.metrics.profit !== null) && (
+                    <div className="flex flex-wrap gap-2 mt-4">
+                      {dashboardData.metrics.profit !== null && (
+                        <Badge variant={dashboardData.metrics.profit > 0 ? "default" : "destructive"} className="text-xs px-3 py-1">
+                          {dashboardData.metrics.profit > 0 ? "✓ Profitable" : "⚠ Operating at Loss"}
+                        </Badge>
+                      )}
+                      {dashboardData.metrics.cashOnHand !== null && dashboardData.metrics.monthlyBurnRate !== null && dashboardData.metrics.monthlyBurnRate > 0 && (
+                        <Badge variant="outline" className="text-xs px-3 py-1">
+                          Runway: {Math.round((dashboardData.metrics.cashOnHand / dashboardData.metrics.monthlyBurnRate) * 10) / 10} months
+                        </Badge>
+                      )}
+                      {dashboardData.metrics.overdueInvoices !== null && dashboardData.metrics.overdueInvoices > 0 && (
+                        <Badge variant="destructive" className="text-xs px-3 py-1">
+                          ⚠ ${dashboardData.metrics.overdueInvoices.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })} Overdue
+                        </Badge>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* Dynamic KPI Cards - Only show metrics that have values */}
@@ -149,8 +238,8 @@ const Index = () => {
                   <>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                       {dashboardData.metrics.cashOnHand !== null && (
-                        <KPICard
-                          title="Cash on Hand"
+                  <KPICard
+                    title="Cash on Hand"
                           value={`$${dashboardData.metrics.cashOnHand.toLocaleString("en-US", {
                             minimumFractionDigits: 2,
                             maximumFractionDigits: 2,
@@ -167,10 +256,10 @@ const Index = () => {
                             minimumFractionDigits: 2,
                             maximumFractionDigits: 2,
                           })}`}
-                          icon={TrendingUp}
-                          trend="up"
-                          variant="success"
-                        />
+                    icon={TrendingUp}
+                    trend="up"
+                    variant="success"
+                  />
                       )}
                       {dashboardData.metrics.expenses !== null && (
                         <KPICard
@@ -196,26 +285,26 @@ const Index = () => {
                         />
                       )}
                       {dashboardData.metrics.monthlyBurnRate !== null && (
-                        <KPICard
-                          title="Monthly Burn Rate"
+                  <KPICard
+                    title="Monthly Burn Rate"
                           value={`$${dashboardData.metrics.monthlyBurnRate.toLocaleString("en-US", {
                             minimumFractionDigits: 2,
                             maximumFractionDigits: 2,
                           })}`}
-                          icon={DollarSign}
+                    icon={DollarSign}
                           variant="warning"
-                        />
+                  />
                       )}
                       {dashboardData.metrics.overdueInvoices !== null && (
-                        <KPICard
-                          title="Overdue Invoices"
+                  <KPICard
+                    title="Overdue Invoices"
                           value={`$${dashboardData.metrics.overdueInvoices.toLocaleString("en-US", {
                             minimumFractionDigits: 2,
                             maximumFractionDigits: 2,
                           })}`}
-                          icon={AlertCircle}
-                          variant="destructive"
-                        />
+                    icon={AlertCircle}
+                    variant="destructive"
+                  />
                       )}
                       {dashboardData.metrics.accountsReceivable !== null && (
                         <KPICard
@@ -239,53 +328,315 @@ const Index = () => {
                           variant="default"
                         />
                       )}
-                    </div>
+                </div>
 
-                    {/* Data Summary Section */}
-                    {(dashboardData.dataTypes.length > 0 || dashboardData.availableCategories.length > 0 || dashboardData.timeRange) && (
-                      <div className="bg-muted/30 border border-border/50 rounded-lg p-4 sm:p-6">
-                        <h3 className="text-sm font-semibold mb-3">Data Overview</h3>
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
-                          {dashboardData.dataTypes.length > 0 && (
+                    {/* Comprehensive Data Overview Section */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      {/* Statistics & Financial Health */}
+                      <Card className="border-border/50 bg-card">
+                        <CardHeader>
+                          <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                            <Activity className="w-5 h-5 text-primary" />
+                            Statistics & Health
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          {/* Statistics Grid */}
+                          <div className="grid grid-cols-2 gap-3">
+                            {/* Show statistics if available, otherwise show key metrics */}
+                            {dashboardData.statistics?.totalTransactions !== null && dashboardData.statistics?.totalTransactions !== undefined ? (
+                              <div className="p-3 bg-gradient-to-br from-primary/10 to-primary/5 rounded-lg border border-primary/20 hover:border-primary/40 transition-colors">
+                                <p className="text-xs text-muted-foreground mb-1">Total Transactions</p>
+                                <p className="text-lg font-bold text-foreground">{dashboardData.statistics.totalTransactions.toLocaleString()}</p>
+                              </div>
+                            ) : dashboardData.metrics.revenue !== null && (
+                              <div className="p-3 bg-gradient-to-br from-success/10 to-success/5 rounded-lg border border-success/20 hover:border-success/40 transition-colors">
+                                <p className="text-xs text-muted-foreground mb-1">Total Revenue</p>
+                                <p className="text-lg font-bold text-foreground">${dashboardData.metrics.revenue.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
+                              </div>
+                            )}
+                            
+                            {dashboardData.statistics?.averageTransactionSize !== null && dashboardData.statistics?.averageTransactionSize !== undefined ? (
+                              <div className="p-3 bg-gradient-to-br from-success/10 to-success/5 rounded-lg border border-success/20 hover:border-success/40 transition-colors">
+                                <p className="text-xs text-muted-foreground mb-1">Avg Transaction</p>
+                                <p className="text-lg font-bold text-foreground">${dashboardData.statistics.averageTransactionSize.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                              </div>
+                            ) : dashboardData.metrics.expenses !== null && (
+                              <div className="p-3 bg-gradient-to-br from-destructive/10 to-destructive/5 rounded-lg border border-destructive/20 hover:border-destructive/40 transition-colors">
+                                <p className="text-xs text-muted-foreground mb-1">Total Expenses</p>
+                                <p className="text-lg font-bold text-foreground">${dashboardData.metrics.expenses.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
+                              </div>
+                            )}
+
+                            {dashboardData.statistics?.invoiceCount !== null && dashboardData.statistics?.invoiceCount !== undefined ? (
+                              <div className="p-3 bg-gradient-to-br from-primary/10 to-primary/5 rounded-lg border border-primary/20 hover:border-primary/40 transition-colors">
+                                <p className="text-xs text-muted-foreground mb-1">Invoices</p>
+                                <p className="text-lg font-bold text-foreground">{dashboardData.statistics.invoiceCount.toLocaleString()}</p>
+                              </div>
+                            ) : dashboardData.metrics.accountsReceivable !== null && dashboardData.metrics.accountsReceivable > 0 && (
+                              <div className="p-3 bg-gradient-to-br from-primary/10 to-primary/5 rounded-lg border border-primary/20 hover:border-primary/40 transition-colors">
+                                <p className="text-xs text-muted-foreground mb-1">Receivables</p>
+                                <p className="text-lg font-bold text-foreground">${dashboardData.metrics.accountsReceivable.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
+                              </div>
+                            )}
+
+                            {dashboardData.statistics?.expenseCount !== null && dashboardData.statistics?.expenseCount !== undefined ? (
+                              <div className="p-3 bg-gradient-to-br from-destructive/10 to-destructive/5 rounded-lg border border-destructive/20 hover:border-destructive/40 transition-colors">
+                                <p className="text-xs text-muted-foreground mb-1">Expense Records</p>
+                                <p className="text-lg font-bold text-foreground">{dashboardData.statistics.expenseCount.toLocaleString()}</p>
+                              </div>
+                            ) : dashboardData.metrics.accountsPayable !== null && dashboardData.metrics.accountsPayable > 0 && (
+                              <div className="p-3 bg-gradient-to-br from-warning/10 to-warning/5 rounded-lg border border-warning/20 hover:border-warning/40 transition-colors">
+                                <p className="text-xs text-muted-foreground mb-1">Payables</p>
+                                <p className="text-lg font-bold text-foreground">${dashboardData.metrics.accountsPayable.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
+                              </div>
+                            )}
+
+                            {/* Show empty state if no data at all */}
+                            {!dashboardData.statistics?.totalTransactions && 
+                             !dashboardData.metrics.revenue && 
+                             !dashboardData.metrics.expenses && 
+                             !dashboardData.metrics.accountsReceivable && 
+                             !dashboardData.metrics.accountsPayable && (
+                              <div className="col-span-2 text-center py-6 text-muted-foreground text-sm">
+                                <Activity className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                                <p>Statistics will appear here</p>
+                                <p className="text-xs mt-1">once data is available</p>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Financial Health Indicators */}
+                          <div className="pt-4 border-t border-border/50">
+                            <p className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wide">Financial Health</p>
+                            <div className="space-y-3">
+                              {/* Calculate profit margin if we have revenue and profit */}
+                              {(() => {
+                                const profitMargin = dashboardData.financialHealth?.profitMargin ?? 
+                                  (dashboardData.metrics.revenue && dashboardData.metrics.profit !== null && dashboardData.metrics.revenue > 0
+                                    ? (dashboardData.metrics.profit / dashboardData.metrics.revenue) * 100
+                                    : null);
+                                return profitMargin !== null && (
+                                  <div className="flex items-center justify-between p-2 bg-muted/30 rounded-lg">
+                                    <div className="flex items-center gap-2">
+                                      <Percent className="w-4 h-4 text-muted-foreground" />
+                                      <span className="text-sm font-medium">Profit Margin</span>
+                                    </div>
+                                    <Badge variant={profitMargin > 0 ? "default" : "destructive"} className="font-semibold">
+                                      {profitMargin > 0 ? "+" : ""}{profitMargin.toFixed(1)}%
+                                    </Badge>
+                                  </div>
+                                );
+                              })()}
+
+                              {/* Calculate expense ratio */}
+                              {(() => {
+                                const expenseRatio = dashboardData.financialHealth?.expenseRatio ??
+                                  (dashboardData.metrics.revenue && dashboardData.metrics.expenses && dashboardData.metrics.revenue > 0
+                                    ? (dashboardData.metrics.expenses / dashboardData.metrics.revenue) * 100
+                                    : null);
+                                return expenseRatio !== null && (
+                                  <div className="flex items-center justify-between p-2 bg-muted/30 rounded-lg">
+                                    <div className="flex items-center gap-2">
+                                      <TrendingDown className="w-4 h-4 text-muted-foreground" />
+                                      <span className="text-sm font-medium">Expense Ratio</span>
+                                    </div>
+                                    <Badge variant="outline" className="font-semibold">
+                                      {expenseRatio.toFixed(1)}%
+                                    </Badge>
+                                  </div>
+                                );
+                              })()}
+
+                              {/* Calculate cash runway */}
+                              {(() => {
+                                const cashRunway = dashboardData.financialHealth?.cashRunway ??
+                                  (dashboardData.metrics.cashOnHand && dashboardData.metrics.monthlyBurnRate && dashboardData.metrics.monthlyBurnRate > 0
+                                    ? dashboardData.metrics.cashOnHand / dashboardData.metrics.monthlyBurnRate
+                                    : null);
+                                return cashRunway !== null && (
+                                  <div className="flex items-center justify-between p-2 bg-muted/30 rounded-lg">
+                                    <div className="flex items-center gap-2">
+                                      <Calendar className="w-4 h-4 text-muted-foreground" />
+                                      <span className="text-sm font-medium">Cash Runway</span>
+                                    </div>
+                                    <Badge variant={cashRunway > 6 ? "default" : cashRunway > 3 ? "secondary" : "destructive"} className="font-semibold">
+                                      {cashRunway.toFixed(1)} months
+                                    </Badge>
+                                  </div>
+                                );
+                              })()}
+
+                              {/* Show message if no health data */}
+                              {!dashboardData.financialHealth?.profitMargin && 
+                               !dashboardData.financialHealth?.expenseRatio && 
+                               !dashboardData.financialHealth?.cashRunway &&
+                               !dashboardData.metrics.revenue && 
+                               !dashboardData.metrics.expenses && (
+                                <div className="text-center py-4 text-muted-foreground text-sm">
+                                  <Activity className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                                  <p>Financial health data will appear here</p>
+                                  <p className="text-xs mt-1">once metrics are available</p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {/* Top Entities & Data Types */}
+                      <Card className="border-border/50 bg-card">
+                        <CardHeader>
+                          <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                            <Building2 className="w-5 h-5 text-primary" />
+                            Top Entities & Data
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          {/* Top Categories */}
+                          {dashboardData.topEntities?.topCategories && dashboardData.topEntities.topCategories.length > 0 ? (
                             <div>
-                              <p className="text-muted-foreground mb-1">Data Types</p>
-                              <div className="flex flex-wrap gap-1">
-                                {dashboardData.dataTypes.map((type, idx) => (
-                                  <span key={idx} className="px-2 py-1 bg-background rounded text-xs">
-                                    {type}
-                                  </span>
+                              <p className="text-xs font-semibold text-muted-foreground mb-3 flex items-center gap-1 uppercase tracking-wide">
+                                <ShoppingCart className="w-4 h-4" />
+                                Top Categories
+                              </p>
+                              <div className="space-y-2">
+                                {dashboardData.topEntities.topCategories.slice(0, 5).map((cat, idx) => (
+                                  <div key={idx} className="flex items-center justify-between p-3 bg-gradient-to-r from-muted/40 to-muted/20 rounded-lg border border-border/50 hover:border-primary/30 transition-colors">
+                                    <div className="flex items-center gap-3">
+                                      <div 
+                                        className="w-2 h-2 rounded-full"
+                                        style={{ backgroundColor: `hsl(var(--chart-${(idx % 5) + 1}))` }}
+                                      />
+                                      <span className="text-sm font-medium">{cat.name}</span>
+                                    </div>
+                                    <div className="text-right">
+                                      <p className="text-sm font-bold">${cat.amount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                                      {cat.percentage && <p className="text-xs text-muted-foreground">{cat.percentage.toFixed(1)}%</p>}
+                                    </div>
+                                  </div>
                                 ))}
                               </div>
                             </div>
-                          )}
-                          {dashboardData.availableCategories.length > 0 && (
+                          ) : dashboardData.availableCategories.length > 0 && (
                             <div>
-                              <p className="text-muted-foreground mb-1">Categories</p>
-                              <div className="flex flex-wrap gap-1">
-                                {dashboardData.availableCategories.slice(0, 5).map((cat, idx) => (
-                                  <span key={idx} className="px-2 py-1 bg-background rounded text-xs">
+                              <p className="text-xs font-semibold text-muted-foreground mb-3 flex items-center gap-1 uppercase tracking-wide">
+                                <ShoppingCart className="w-4 h-4" />
+                                Categories
+                              </p>
+                              <div className="flex flex-wrap gap-2">
+                                {dashboardData.availableCategories.slice(0, 8).map((cat, idx) => (
+                                  <Badge key={idx} variant="secondary" className="text-xs">
                                     {cat}
-                                  </span>
+                                  </Badge>
                                 ))}
-                                {dashboardData.availableCategories.length > 5 && (
-                                  <span className="px-2 py-1 bg-background rounded text-xs">
-                                    +{dashboardData.availableCategories.length - 5} more
-                                  </span>
+                                {dashboardData.availableCategories.length > 8 && (
+                                  <Badge variant="outline" className="text-xs">
+                                    +{dashboardData.availableCategories.length - 8} more
+                                  </Badge>
                                 )}
                               </div>
                             </div>
                           )}
-                          {dashboardData.timeRange && (
+
+                          {/* Top Vendors */}
+                          {dashboardData.topEntities?.topVendors && dashboardData.topEntities.topVendors.length > 0 ? (
                             <div>
-                              <p className="text-muted-foreground mb-1">Time Range</p>
-                              <p className="text-xs">
-                                {new Date(dashboardData.timeRange.start).toLocaleDateString()} - {new Date(dashboardData.timeRange.end).toLocaleDateString()}
+                              <p className="text-xs font-semibold text-muted-foreground mb-3 flex items-center gap-1 uppercase tracking-wide">
+                                <Users className="w-4 h-4" />
+                                Top Vendors
                               </p>
+                              <div className="space-y-2">
+                                {dashboardData.topEntities.topVendors.slice(0, 3).map((vendor, idx) => (
+                                  <div key={idx} className="flex items-center justify-between p-3 bg-gradient-to-r from-muted/40 to-muted/20 rounded-lg border border-border/50">
+                                    <span className="text-sm font-medium truncate flex-1">{vendor.name}</span>
+                                    <span className="text-sm font-bold ml-2 text-primary">${vendor.amount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                  </div>
+                                ))}
+                              </div>
                             </div>
+                          ) : dashboardData.metrics.accountsPayable !== null && (
+                            <div>
+                              <p className="text-xs font-semibold text-muted-foreground mb-3 flex items-center gap-1 uppercase tracking-wide">
+                                <Users className="w-4 h-4" />
+                                Key Metrics
+                              </p>
+                              <div className="space-y-2">
+                                {dashboardData.metrics.accountsPayable > 0 && (
+                                  <div className="flex items-center justify-between p-3 bg-gradient-to-r from-warning/10 to-warning/5 rounded-lg border border-warning/20">
+                                    <span className="text-sm font-medium">Total Payables</span>
+                                    <span className="text-sm font-bold">${dashboardData.metrics.accountsPayable.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                  </div>
+                                )}
+                                {dashboardData.metrics.accountsReceivable !== null && dashboardData.metrics.accountsReceivable > 0 && (
+                                  <div className="flex items-center justify-between p-3 bg-gradient-to-r from-success/10 to-success/5 rounded-lg border border-success/20">
+                                    <span className="text-sm font-medium">Total Receivables</span>
+                                    <span className="text-sm font-bold">${dashboardData.metrics.accountsReceivable.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Data Types & Time Range */}
+                          <div className="pt-4 border-t border-border/50 space-y-4">
+                            {dashboardData.dataTypes.length > 0 ? (
+                              <div>
+                                <p className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1 uppercase tracking-wide">
+                                  <FileText className="w-4 h-4" />
+                                  Data Types
+                                </p>
+                                <div className="flex flex-wrap gap-2">
+                                  {dashboardData.dataTypes.map((type, idx) => (
+                                    <Badge key={idx} variant="outline" className="text-xs font-medium">
+                                      {type}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              </div>
+                            ) : (
+                              <div>
+                                <p className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1 uppercase tracking-wide">
+                                  <FileText className="w-4 h-4" />
+                                  Available Data
+                                </p>
+                                <div className="text-sm text-muted-foreground">
+                                  {dashboardData.metrics.revenue !== null || dashboardData.metrics.expenses !== null ? (
+                                    <p>Financial metrics available from knowledge base</p>
+                                  ) : (
+                                    <p>Upload financial data to see insights</p>
                           )}
                         </div>
                       </div>
                     )}
+                            
+                            {dashboardData.timeRange && dashboardData.timeRange.start && dashboardData.timeRange.end && (() => {
+                              try {
+                                const startDate = new Date(dashboardData.timeRange.start);
+                                const endDate = new Date(dashboardData.timeRange.end);
+                                // Check if dates are valid (not epoch 0 or invalid)
+                                if (startDate.getTime() > 0 && endDate.getTime() > 0 && !isNaN(startDate.getTime()) && !isNaN(endDate.getTime())) {
+                                  return (
+                                    <div>
+                                      <p className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1 uppercase tracking-wide">
+                                        <Calendar className="w-4 h-4" />
+                                        Time Range
+                                      </p>
+                                      <p className="text-sm font-medium">
+                                        {startDate.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })} - {endDate.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                                      </p>
+                                    </div>
+                                  );
+                                }
+                              } catch (e) {
+                                // Invalid date, don't show
+                              }
+                              return null;
+                            })()}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
 
                     {metricsError && (
                       <div className="text-sm text-destructive bg-destructive/10 border border-destructive/20 p-4 rounded-lg">
@@ -308,8 +659,15 @@ const Index = () => {
                   </div>
                 )}
 
-                {/* Cash Flow Chart */}
-                <CashFlowChart />
+                {/* Cash Flow Chart - Use real data if available */}
+                {dashboardData && (
+                  <CashFlowChart 
+                    revenue={dashboardData.metrics.revenue}
+                    expenses={dashboardData.metrics.expenses}
+                    cashOnHand={dashboardData.metrics.cashOnHand}
+                    monthlyData={dashboardData.monthlyData}
+                  />
+                )}
               </>
             )}
 
@@ -346,7 +704,7 @@ const Index = () => {
         {/* Right Column - CFO Agent Chat (only on dashboard) */}
         {activeView === "dashboard" && (
           <div className="hidden lg:flex lg:w-96 border-l border-border/50 p-4 flex-col">
-            <ExpandableChat className="h-[calc(100vh-2rem)]" />
+              <ExpandableChat className="h-[calc(100vh-2rem)]" />
           </div>
         )}
       </div>
