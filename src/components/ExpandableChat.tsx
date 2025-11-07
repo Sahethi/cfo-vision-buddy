@@ -56,6 +56,7 @@ export function ExpandableChat({ className }: ExpandableChatProps) {
         </div>
         <CFOChat
           showLoadSample={false}
+          isExpanded={false}
           messages={messages}
           setMessages={setMessages}
           inputValue={inputValue}
@@ -99,6 +100,7 @@ export function ExpandableChat({ className }: ExpandableChatProps) {
             <CFOChat
               hideHeader={true}
               showLoadSample={true}
+              isExpanded={true}
               messages={messages}
               setMessages={setMessages}
               inputValue={inputValue}

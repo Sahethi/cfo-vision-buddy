@@ -151,6 +151,7 @@ function parseBedrockTraces(traces: BedrockTrace[]): ChatMessage[] {
 interface CFOChatProps {
   hideHeader?: boolean;
   showLoadSample?: boolean;
+  isExpanded?: boolean;
   messages?: ChatMessage[];
   setMessages?: Dispatch<SetStateAction<ChatMessage[]>>;
   inputValue?: string;
@@ -164,6 +165,7 @@ interface CFOChatProps {
 export function CFOChat({
   hideHeader = false,
   showLoadSample = true,
+  isExpanded = false,
   messages: externalMessages,
   setMessages: externalSetMessages,
   inputValue: externalInputValue,
@@ -387,7 +389,7 @@ export function CFOChat({
   };
 
   return (
-    <Card className="border-border/50 h-full flex flex-col overflow-hidden">
+    <Card className="border-border/50 h-full w-full flex flex-col overflow-hidden">
       {!hideHeader && (
         <CardHeader className="border-b border-border/50 flex-shrink-0">
           <div className="flex items-center justify-between">
@@ -412,7 +414,12 @@ export function CFOChat({
             <div key={index} className="space-y-2">
               {message.type === "user" && (
                 <div className="flex justify-end">
-                  <div className="bg-primary text-primary-foreground rounded-lg px-4 py-3 text-sm max-w-[85%]">
+                  <div
+                    className={cn(
+                      "bg-primary text-primary-foreground rounded-lg px-4 py-3 text-sm",
+                      isExpanded ? "max-w-full" : "max-w-[85%]"
+                    )}
+                  >
                     <div className="flex items-center gap-2 mb-1">
                       <User className="w-3 h-3" />
                       <span className="text-xs font-medium">You</span>
@@ -441,7 +448,12 @@ export function CFOChat({
               
               {message.type === "rationale" && (
                 <div className="flex justify-start">
-                  <div className="bg-muted/50 border border-border/50 rounded-lg px-4 py-3 text-sm max-w-[85%]">
+                  <div
+                    className={cn(
+                      "bg-muted/50 border border-border/50 rounded-lg px-4 py-3 text-sm",
+                      isExpanded ? "max-w-full" : "max-w-[85%]"
+                    )}
+                  >
                     <div className="flex items-center gap-2 mb-1">
                       <Brain className="w-3 h-3 text-muted-foreground" />
                       <span className="text-xs font-medium text-muted-foreground">CFO Agent Thinking</span>
@@ -453,7 +465,12 @@ export function CFOChat({
 
               {message.type === "agent_call" && (
                 <div className="flex justify-start">
-                  <div className="bg-accent/50 border border-accent rounded-lg px-4 py-3 text-sm max-w-[85%]">
+                  <div
+                    className={cn(
+                      "bg-accent/50 border border-accent rounded-lg px-4 py-3 text-sm",
+                      isExpanded ? "max-w-full" : "max-w-[85%]"
+                    )}
+                  >
                     <div className="flex items-center gap-2 mb-2">
                       <Badge variant="outline" className="text-xs">
                         Calling: {message.agentName?.replace('fmo-', '').replace(/-/g, ' ')}
@@ -466,7 +483,12 @@ export function CFOChat({
 
               {message.type === "agent_response" && (
                 <div className="flex justify-start">
-                  <div className="bg-secondary border border-border rounded-lg px-4 py-3 text-sm max-w-[85%]">
+                  <div
+                    className={cn(
+                      "bg-secondary border border-border rounded-lg px-4 py-3 text-sm",
+                      isExpanded ? "max-w-full" : "max-w-[85%]"
+                    )}
+                  >
                     <div className="flex items-center gap-2 mb-2">
                       <Badge variant="secondary" className="text-xs">
                         Response from: {message.agentName?.replace('fmo-', '').replace(/-/g, ' ')}
@@ -483,7 +505,12 @@ export function CFOChat({
 
               {message.type === "final_response" && (
                 <div className="flex justify-start">
-                  <div className="bg-muted text-foreground rounded-lg px-4 py-3 text-sm max-w-[85%]">
+                  <div
+                    className={cn(
+                      "bg-muted text-foreground rounded-lg px-4 py-3 text-sm",
+                      isExpanded ? "max-w-full" : "max-w-[85%]"
+                    )}
+                  >
                     <div className="flex items-center gap-2 mb-2">
                       <Brain className="w-3 h-3" />
                       <span className="text-xs font-medium">CFO Agent</span>
