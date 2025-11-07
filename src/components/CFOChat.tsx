@@ -3,7 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Send, Brain, User, Paperclip, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useState, useRef, type ChangeEvent } from "react";
+import { useState, useRef, useEffect, type ChangeEvent } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { Badge } from "@/components/ui/badge";
 import { ChatVisualization } from "./ChatVisualization";
@@ -191,6 +191,11 @@ export function CFOChat({
   const setUploadedFiles = externalSetUploadedFiles || setInternalUploadedFiles;
   
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, isProcessing, isExpanded]);
 
   const handleFileSelect = (e: ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []) as File[];
@@ -431,8 +436,8 @@ export function CFOChat({
                 <div className="flex justify-end">
                   <div
                     className={cn(
-                      "bg-primary text-primary-foreground rounded-lg px-4 py-3 text-sm",
-                      isExpanded ? "max-w-3xl" : "max-w-[85%]"
+                      "bg-primary text-primary-foreground rounded-lg px-4 py-3 text-sm w-fit",
+                      isExpanded ? "max-w-[60vw]" : "max-w-[85%]"
                     )}
                   >
                     <div className="flex items-center gap-2 mb-1">
@@ -465,8 +470,8 @@ export function CFOChat({
                 <div className="flex justify-start">
                   <div
                     className={cn(
-                      "bg-muted/50 border border-border/50 rounded-lg px-4 py-3 text-sm",
-                      isExpanded ? "max-w-3xl" : "max-w-[85%]"
+                      "bg-muted/50 border border-border/50 rounded-lg px-4 py-3 text-sm w-fit",
+                      isExpanded ? "max-w-[60vw]" : "max-w-[85%]"
                     )}
                   >
                     <div className="flex items-center gap-2 mb-1">
@@ -482,8 +487,8 @@ export function CFOChat({
                 <div className="flex justify-start">
                   <div
                     className={cn(
-                      "bg-accent/50 border border-accent rounded-lg px-4 py-3 text-sm",
-                      isExpanded ? "max-w-3xl" : "max-w-[85%]"
+                      "bg-accent/50 border border-accent rounded-lg px-4 py-3 text-sm w-fit",
+                      isExpanded ? "max-w-[60vw]" : "max-w-[85%]"
                     )}
                   >
                     <div className="flex items-center gap-2 mb-2">
@@ -500,8 +505,8 @@ export function CFOChat({
                 <div className="flex justify-start">
                   <div
                     className={cn(
-                      "bg-secondary border border-border rounded-lg px-4 py-3 text-sm",
-                      isExpanded ? "max-w-3xl" : "max-w-[85%]"
+                      "bg-secondary border border-border rounded-lg px-4 py-3 text-sm w-fit",
+                      isExpanded ? "max-w-[60vw]" : "max-w-[85%]"
                     )}
                   >
                     <div className="flex items-center gap-2 mb-2">
@@ -522,8 +527,8 @@ export function CFOChat({
                 <div className="flex justify-start">
                   <div
                     className={cn(
-                      "bg-muted text-foreground rounded-lg px-4 py-3 text-sm",
-                      isExpanded ? "max-w-3xl" : "max-w-[85%]"
+                      "bg-muted text-foreground rounded-lg px-4 py-3 text-sm w-fit",
+                      isExpanded ? "max-w-[60vw]" : "max-w-[85%]"
                     )}
                   >
                     <div className="flex items-center gap-2 mb-2">
@@ -558,6 +563,7 @@ export function CFOChat({
               )}
             </div>
           ))}
+          <div ref={messagesEndRef} />
           {isProcessing && (
             <div className="flex justify-start">
               <div className="bg-muted/50 rounded-lg px-4 py-3 text-sm">
