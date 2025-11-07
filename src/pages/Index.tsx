@@ -15,20 +15,20 @@ const Index = () => {
       <Sidebar activeItem={activeView} onItemClick={setActiveView} />
 
       {/* Main Content Area */}
-      <div className="flex-1 flex">
+      <div className="flex-1 flex flex-col lg:flex-row">
         {/* Center Column - Main Content */}
-        <div className="flex-1 p-8 overflow-y-auto">
-          <div className="max-w-6xl mx-auto space-y-8">
+        <div className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
+          <div className="max-w-6xl mx-auto space-y-6 sm:space-y-8">
             {activeView === "dashboard" && (
               <>
                 {/* Welcome Header */}
                 <div>
-                  <h1 className="text-3xl font-bold tracking-tight">Welcome, Business Owner</h1>
-                  <p className="text-muted-foreground mt-1">Here's your financial overview</p>
+                  <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Welcome, Business Owner</h1>
+                  <p className="text-muted-foreground mt-1 text-sm sm:text-base">Here's your financial overview</p>
                 </div>
 
                 {/* KPI Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                   <KPICard
                     title="Cash on Hand"
                     value="$42,150.80"
@@ -86,7 +86,7 @@ const Index = () => {
 
         {/* Right Column - CFO Agent Chat (only on dashboard) */}
         {activeView === "dashboard" && (
-          <div className="w-96 border-l border-border/50 p-4 flex flex-col">
+          <div className="hidden lg:flex lg:w-96 border-l border-border/50 p-4 flex-col">
             <ExpandableChat className="h-[calc(100vh-2rem)]" />
           </div>
         )}

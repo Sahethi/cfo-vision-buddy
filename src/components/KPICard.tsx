@@ -24,16 +24,16 @@ export function KPICard({ title, value, icon: Icon, trend, variant = "default" }
   };
 
   return (
-    <Card className={cn("border-border/50", variantStyles[variant])}>
-      <CardContent className="p-6">
-        <div className="flex items-start justify-between">
-          <div className="space-y-2 flex-1">
-            <p className="text-sm text-muted-foreground font-medium">{title}</p>
-            <p className="text-3xl font-bold tracking-tight">{value}</p>
+    <Card className={cn("border-border/50 overflow-hidden", variantStyles[variant])}>
+      <CardContent className="p-4 sm:p-6">
+        <div className="flex items-start justify-between gap-3">
+          <div className="space-y-1.5 sm:space-y-2 flex-1 min-w-0">
+            <p className="text-xs sm:text-sm text-muted-foreground font-medium truncate">{title}</p>
+            <p className="text-2xl sm:text-3xl font-bold tracking-tight break-words">{value}</p>
           </div>
           {Icon && (
-            <div className={cn("p-2.5 rounded-lg bg-card-foreground/5", trend && trendColors[trend])}>
-              <Icon className="w-5 h-5" />
+            <div className={cn("p-2 sm:p-2.5 rounded-lg bg-card-foreground/5 flex-shrink-0", trend && trendColors[trend])}>
+              <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
           )}
         </div>
