@@ -739,7 +739,7 @@ const Index = () => {
 
         {/* Right Column - CFO Agent Chat (resizable, only on dashboard) */}
         {activeView === "dashboard" && (
-          <div className="hidden lg:flex relative">
+          <div className="hidden lg:flex relative h-screen">
             {/* Resize handle */}
             <div
               className={cn(
@@ -754,14 +754,14 @@ const Index = () => {
             
             <div
               className={cn(
-                "flex flex-col border-l border-border/50 transition-all duration-200 ease-out",
+                "flex flex-col border-l border-border/50 transition-all duration-200 ease-out h-full",
                 chatWidth <= 64 ? "w-16" : ""
               )}
               style={{ width: chatWidth > 64 ? `${chatWidth}px` : undefined }}
             >
               {chatWidth > 64 ? (
-                <div className="p-4 flex-1 flex flex-col min-h-0">
-                  <div className="flex items-center justify-between mb-2">
+                <div className="p-4 h-full flex flex-col overflow-hidden">
+                  <div className="flex items-center justify-between mb-2 flex-shrink-0">
                     <h3 className="text-sm font-semibold">CFO Agent</h3>
                     <Button
                       variant="ghost"
@@ -773,7 +773,9 @@ const Index = () => {
                       <ChevronRight className="h-4 w-4" />
                     </Button>
                   </div>
-                  <ExpandableChat className="flex-1 min-h-0" />
+                  <div className="flex-1 min-h-0 overflow-hidden">
+                    <ExpandableChat className="h-full" />
+                  </div>
                 </div>
               ) : (
                 <div className="p-2 flex flex-col items-center h-full">
