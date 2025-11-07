@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Sidebar } from "@/components/Sidebar";
 import { KPICard } from "@/components/KPICard";
 import { CashFlowChart } from "@/components/CashFlowChart";
-import { CFOChat } from "@/components/CFOChat";
+import { ExpandableChat } from "@/components/ExpandableChat";
 import { DataVisualization } from "@/components/DataVisualization";
 import { TrendingUp, DollarSign, AlertCircle } from "lucide-react";
 
@@ -86,8 +86,8 @@ const Index = () => {
 
         {/* Right Column - CFO Agent Chat (only on dashboard) */}
         {activeView === "dashboard" && (
-          <div className="w-96 border-l border-border/50 p-4">
-            <CFOChat />
+          <div className="w-96 border-l border-border/50 p-4 flex flex-col">
+            <ExpandableChat className="h-[calc(100vh-2rem)]" />
           </div>
         )}
       </div>

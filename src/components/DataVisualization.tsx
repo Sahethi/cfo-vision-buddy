@@ -4,13 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { 
-  LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
-  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer 
-} from "recharts";
 import { Loader2 } from "lucide-react";
-
-const COLORS = ['hsl(var(--chart-1))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 'hsl(var(--chart-4))', 'hsl(var(--chart-5))'];
+import { LineChartComponent } from "./charts/LineChartComponent";
+import { BarChartComponent } from "./charts/BarChartComponent";
+import { PieChartComponent } from "./charts/PieChartComponent";
 
 export const DataVisualization = () => {
   const [jsonInput, setJsonInput] = useState("");
@@ -141,107 +138,46 @@ export const DataVisualization = () => {
             </TabsList>
 
             <TabsContent value="line">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Time Series Analysis</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={400}>
-                    <LineChart data={processedData.timeSeriesData || processedData.lineChartData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                      <XAxis 
-                        dataKey="date" 
-                        stroke="hsl(var(--muted-foreground))"
-                      />
-                      <YAxis stroke="hsl(var(--muted-foreground))" />
-                      <Tooltip 
-                        contentStyle={{ 
-                          backgroundColor: 'hsl(var(--card))',
-                          border: '1px solid hsl(var(--border))'
-                        }}
-                      />
-                      <Legend />
-                      {processedData.timeSeriesData && (
-                        <>
-                          <Line type="monotone" dataKey="income" stroke="hsl(var(--success))" strokeWidth={2} />
-                          <Line type="monotone" dataKey="expense" stroke="hsl(var(--destructive))" strokeWidth={2} />
-                          <Line type="monotone" dataKey="net" stroke="hsl(var(--primary))" strokeWidth={2} />
-                        </>
-                      )}
-                      {processedData.lineChartData && (
-                        <Line type="monotone" dataKey="value" stroke="hsl(var(--primary))" strokeWidth={2} />
-                      )}
-                    </LineChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
+              <LineChartComponent
+                data={processedData.timeSeriesData || processedData.lineChartData}
+                xAxisKey="date"
+                title="Time Series Analysis"
+                height={400}
+                lines={
+                  processedData.timeSeriesData
+                    ? [
+                        { dataKey: "income", stroke: "hsl(var(--success))", name: "Income" },
+                        { dataKey: "expense", stroke: "hsl(var(--destructive))", name: "Expense" },
+                        { dataKey: "net", stroke: "hsl(var(--primary))", name: "Net" },
+                      ]
+                    : [{ dataKey: "value", stroke: "hsl(var(--primary))" }]
+                }
+              />
             </TabsContent>
 
             <TabsContent value="bar">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Bar Chart Analysis</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={400}>
-                    <BarChart data={processedData.barChartData || processedData.timeSeriesData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                      <XAxis 
-                        dataKey="date" 
-                        stroke="hsl(var(--muted-foreground))"
-                      />
-                      <YAxis stroke="hsl(var(--muted-foreground))" />
-                      <Tooltip 
-                        contentStyle={{ 
-                          backgroundColor: 'hsl(var(--card))',
-                          border: '1px solid hsl(var(--border))'
-                        }}
-                      />
-                      <Legend />
-                      {processedData.barChartData && (
-                        <>
-                          <Bar dataKey="income" fill="hsl(var(--success))" />
-                          <Bar dataKey="expense" fill="hsl(var(--destructive))" />
-                        </>
-                      )}
-                    </BarChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
+              <BarChartComponent
+                data={processedData.barChartData || processedData.timeSeriesData}
+                xAxisKey="date"
+                title="Bar Chart Analysis"
+                height={400}
+                bars={
+                  processedData.barChartData
+                    ? [
+                        { dataKey: "income", fill: "hsl(var(--success))", name: "Income" },
+                        { dataKey: "expense", fill: "hsl(var(--destructive))", name: "Expense" },
+                      ]
+                    : undefined
+                }
+              />
             </TabsContent>
 
             <TabsContent value="pie">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Category Distribution</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={400}>
-                    <PieChart>
-                      <Pie
-                        data={processedData.pieChartData}
-                        cx="50%"
-                        cy="50%"
-                        labelLine={false}
-                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                        outerRadius={120}
-                        fill="hsl(var(--primary))"
-                        dataKey="value"
-                      >
-                        {processedData.pieChartData.map((_: any, index: number) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip 
-                        contentStyle={{ 
-                          backgroundColor: 'hsl(var(--card))',
-                          border: '1px solid hsl(var(--border))'
-                        }}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
+              <PieChartComponent
+                data={processedData.pieChartData}
+                title="Category Distribution"
+                height={400}
+              />
             </TabsContent>
           </Tabs>
         </>

@@ -344,8 +344,8 @@ export function CFOChat() {
   };
 
   return (
-    <Card className="border-border/50 h-full flex flex-col">
-      <CardHeader className="border-b border-border/50">
+    <Card className="border-border/50 h-full flex flex-col overflow-hidden">
+      <CardHeader className="border-b border-border/50 flex-shrink-0">
         <div className="flex items-center justify-between">
           <CardTitle className="text-xl font-semibold">Autonomous CFO Agent</CardTitle>
           <Button onClick={handleLoadSample} variant="outline" size="sm">
@@ -353,9 +353,9 @@ export function CFOChat() {
           </Button>
         </div>
       </CardHeader>
-      <CardContent className="flex-1 flex flex-col p-0">
-        {/* Messages area */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <CardContent className="flex-1 flex flex-col p-0 min-h-0">
+        {/* Messages area - scrollable */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
           {messages.length === 0 && (
             <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
               Click "Load Sample" to see a sample conversation or ask a question below
@@ -470,8 +470,8 @@ export function CFOChat() {
           )}
         </div>
 
-        {/* Input area */}
-        <div className="p-4 border-t border-border/50 space-y-2">
+        {/* Input area - fixed at bottom */}
+        <div className="p-4 border-t border-border/50 space-y-2 flex-shrink-0">
           {/* File previews */}
           {uploadedFiles.length > 0 && (
             <div className="flex flex-wrap gap-2 pb-2">
