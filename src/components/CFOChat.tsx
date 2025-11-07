@@ -397,7 +397,7 @@ export function CFOChat({
     <Card
       className={cn(
         "border-border/50 h-full w-full flex flex-col overflow-hidden",
-        isExpanded && "max-w-5xl mx-auto"
+        isExpanded && "max-w-[1100px] w-full mx-auto"
       )}
     >
       {!hideHeader && (
@@ -437,7 +437,7 @@ export function CFOChat({
                   <div
                     className={cn(
                       "bg-primary text-primary-foreground rounded-lg px-4 py-3 text-sm w-fit",
-                      isExpanded ? "max-w-[60vw]" : "max-w-[85%]"
+                      isExpanded ? "max-w-[80%]" : "max-w-[85%]"
                     )}
                   >
                     <div className="flex items-center gap-2 mb-1">
@@ -471,7 +471,7 @@ export function CFOChat({
                   <div
                     className={cn(
                       "bg-muted/50 border border-border/50 rounded-lg px-4 py-3 text-sm w-fit",
-                      isExpanded ? "max-w-[60vw]" : "max-w-[85%]"
+                      isExpanded ? "max-w-[75%]" : "max-w-[85%]"
                     )}
                   >
                     <div className="flex items-center gap-2 mb-1">
@@ -488,7 +488,7 @@ export function CFOChat({
                   <div
                     className={cn(
                       "bg-accent/50 border border-accent rounded-lg px-4 py-3 text-sm w-fit",
-                      isExpanded ? "max-w-[60vw]" : "max-w-[85%]"
+                      isExpanded ? "max-w-[75%]" : "max-w-[85%]"
                     )}
                   >
                     <div className="flex items-center gap-2 mb-2">
@@ -506,7 +506,7 @@ export function CFOChat({
                   <div
                     className={cn(
                       "bg-secondary border border-border rounded-lg px-4 py-3 text-sm w-fit",
-                      isExpanded ? "max-w-[60vw]" : "max-w-[85%]"
+                      isExpanded ? "max-w-[75%]" : "max-w-[85%]"
                     )}
                   >
                     <div className="flex items-center gap-2 mb-2">
@@ -528,7 +528,7 @@ export function CFOChat({
                   <div
                     className={cn(
                       "bg-muted text-foreground rounded-lg px-4 py-3 text-sm w-fit",
-                      isExpanded ? "max-w-[60vw]" : "max-w-[85%]"
+                      isExpanded ? "max-w-[75%]" : "max-w-[85%]"
                     )}
                   >
                     <div className="flex items-center gap-2 mb-2">
