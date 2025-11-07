@@ -55,6 +55,7 @@ export function ExpandableChat({ className }: ExpandableChatProps) {
           </Button>
         </div>
         <CFOChat
+          showLoadSample={false}
           messages={messages}
           setMessages={setMessages}
           inputValue={inputValue}
@@ -68,7 +69,7 @@ export function ExpandableChat({ className }: ExpandableChatProps) {
 
       {/* Expanded/Fullscreen Dialog */}
       <Dialog open={isExpanded} onOpenChange={setIsExpanded}>
-        <DialogContent className="max-w-[95vw] max-h-[95vh] w-full h-full p-0 flex flex-col">
+        <DialogContent className="max-w-[95vw] max-h-[95vh] w-full h-full p-0 flex flex-col [&>button]:hidden">
           <div className="flex items-center justify-between p-4 border-b flex-shrink-0">
             <div className="flex items-center gap-2">
               <h2 className="text-lg font-semibold">Autonomous CFO Agent</h2>
@@ -97,6 +98,7 @@ export function ExpandableChat({ className }: ExpandableChatProps) {
           <div className="flex-1 overflow-hidden min-h-0">
             <CFOChat
               hideHeader={true}
+              showLoadSample={true}
               messages={messages}
               setMessages={setMessages}
               inputValue={inputValue}

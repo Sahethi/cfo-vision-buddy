@@ -150,6 +150,7 @@ function parseBedrockTraces(traces: BedrockTrace[]): ChatMessage[] {
 
 interface CFOChatProps {
   hideHeader?: boolean;
+  showLoadSample?: boolean;
   messages?: ChatMessage[];
   setMessages?: Dispatch<SetStateAction<ChatMessage[]>>;
   inputValue?: string;
@@ -162,6 +163,7 @@ interface CFOChatProps {
 
 export function CFOChat({
   hideHeader = false,
+  showLoadSample = true,
   messages: externalMessages,
   setMessages: externalSetMessages,
   inputValue: externalInputValue,
@@ -346,7 +348,14 @@ export function CFOChat({
             { date: "2025-01-03", amount: 600, category: "Utilities", type: "expense" },
           ]
         };
-        responseText = "I've analyzed your data. Here's the visualization:\n\n```json\n" + JSON.stringify(visualizationData, null, 2) + "\n```";
+        // Provide a concise summary instead of verbose JSON
+        const totalIncome = visualizationData.data
+          .filter((d: any) => d.type === "income")
+          .reduce((sum: number, d: any) => sum + d.amount, 0);
+        const totalExpense = visualizationData.data
+          .filter((d: any) => d.type === "expense")
+          .reduce((sum: number, d: any) => sum + d.amount, 0);
+        responseText = `I've analyzed your financial data.\n\n**Summary:**\n- Total Income: $${totalIncome.toLocaleString()}\n- Total Expenses: $${totalExpense.toLocaleString()}\n- Net: $${(totalIncome - totalExpense).toLocaleString()}\n\nHere are the visualizations:`;
       }
       
       // If the API returns JSON directly, parse it
@@ -383,9 +392,11 @@ export function CFOChat({
         <CardHeader className="border-b border-border/50 flex-shrink-0">
           <div className="flex items-center justify-between">
             <CardTitle className="text-xl font-semibold">Autonomous CFO Agent</CardTitle>
-            <Button onClick={handleLoadSample} variant="outline" size="sm">
-              Load Sample
-            </Button>
+            {showLoadSample && (
+              <Button onClick={handleLoadSample} variant="outline" size="sm">
+                Load Sample
+              </Button>
+            )}
           </div>
         </CardHeader>
       )}
@@ -483,7 +494,15 @@ export function CFOChat({
                         if (line.trim().startsWith('```json') || line.trim() === '```') {
                           return null;
                         }
-                        return line.trim() && <p key={i} className="mb-1">{line}</p>;
+                        // Format markdown-style bold text
+                        const formattedLine = line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                        return line.trim() && (
+                          <p 
+                            key={i} 
+                            className="mb-1"
+                            dangerouslySetInnerHTML={{ __html: formattedLine }}
+                          />
+                        );
                       })}
                     </div>
                     {message.visualizationData && (
