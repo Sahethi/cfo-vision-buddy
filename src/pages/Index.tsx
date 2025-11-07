@@ -4,9 +4,11 @@ import { KPICard } from "@/components/KPICard";
 import { CashFlowChart } from "@/components/CashFlowChart";
 import { ExpandableChat } from "@/components/ExpandableChat";
 import { DataVisualization } from "@/components/DataVisualization";
-import { TrendingUp, DollarSign, AlertCircle, TrendingDown, Receipt, CreditCard, Wallet, BarChart3, Users, FileText, Activity, Percent, Calendar, Building2, ShoppingCart } from "lucide-react";
+import { TrendingUp, DollarSign, AlertCircle, TrendingDown, Receipt, CreditCard, Wallet, BarChart3, Users, FileText, Activity, Percent, Calendar, Building2, ShoppingCart, ChevronLeft, ChevronRight, MessageSquare } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { 
   kpiData, 
   monthlyData, 
@@ -183,6 +185,40 @@ const Index = () => {
 
     loadHardcodedData();
   }, [activeView]);
+
+  const [isChatExpanded, setIsChatExpanded] = useState(true);
+  const [chatWidth, setChatWidth] = useState(384); // Default 384px (w-96)
+  const [isResizing, setIsResizing] = useState(false);
+
+  // Handle resize functionality
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isResizing) return;
+      
+      const newWidth = window.innerWidth - e.clientX;
+      // Constrain between 64px (collapsed) and 800px (max)
+      const constrainedWidth = Math.max(64, Math.min(800, newWidth));
+      setChatWidth(constrainedWidth);
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+    };
+
+    if (isResizing) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+  }, [isResizing]);
 
   return (
     <div className="min-h-screen bg-background flex">
@@ -701,10 +737,61 @@ const Index = () => {
           </div>
         </div>
 
-        {/* Right Column - CFO Agent Chat (only on dashboard) */}
+        {/* Right Column - CFO Agent Chat (resizable, only on dashboard) */}
         {activeView === "dashboard" && (
-          <div className="hidden lg:flex lg:w-96 border-l border-border/50 p-4 flex-col">
-              <ExpandableChat className="h-[calc(100vh-2rem)]" />
+          <div className="hidden lg:flex relative">
+            {/* Resize handle */}
+            <div
+              className={cn(
+                "absolute left-0 top-0 bottom-0 w-1 cursor-col-resize z-20 hover:bg-primary/50 transition-colors",
+                isResizing && "bg-primary"
+              )}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                setIsResizing(true);
+              }}
+            />
+            
+            <div
+              className={cn(
+                "flex flex-col border-l border-border/50 transition-all duration-200 ease-out",
+                chatWidth <= 64 ? "w-16" : ""
+              )}
+              style={{ width: chatWidth > 64 ? `${chatWidth}px` : undefined }}
+            >
+              {chatWidth > 64 ? (
+                <div className="p-4 flex-1 flex flex-col min-h-0">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-sm font-semibold">CFO Agent</h3>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6"
+                      onClick={() => setChatWidth(64)}
+                      title="Collapse chat"
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <ExpandableChat className="flex-1 min-h-0" />
+                </div>
+              ) : (
+                <div className="p-2 flex flex-col items-center h-full">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-10 w-10 mb-2"
+                    onClick={() => setChatWidth(384)}
+                    title="Expand chat"
+                  >
+                    <ChevronLeft className="h-5 w-5" />
+                  </Button>
+                  <div className="flex-1 flex items-center justify-center">
+                    <MessageSquare className="h-6 w-6 text-muted-foreground" />
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>

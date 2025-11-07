@@ -1,4 +1,4 @@
-import { LayoutDashboard, FileText, Settings, BarChart3 } from "lucide-react";
+import { DollarSign } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface SidebarProps {
@@ -7,19 +7,16 @@ interface SidebarProps {
 }
 
 const menuItems = [
-  { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { id: "data-analysis", label: "Data Analysis", icon: BarChart3 },
-  { id: "reports", label: "Reports", icon: FileText },
-  { id: "settings", label: "Settings", icon: Settings },
+  { id: "dashboard", label: "CFO Dashboard", icon: DollarSign },
 ];
 
 export function Sidebar({ activeItem = "dashboard", onItemClick }: SidebarProps) {
   return (
     <aside className="w-20 bg-sidebar border-r border-sidebar-border flex flex-col items-center py-6 space-y-8">
       {/* Logo placeholder */}
-      <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
+      {/* <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
         <div className="w-8 h-8 rounded bg-primary" />
-      </div>
+      </div> */}
 
       {/* Navigation items */}
       <nav className="flex-1 flex flex-col items-center space-y-4">
