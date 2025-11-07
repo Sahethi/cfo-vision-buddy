@@ -389,7 +389,12 @@ export function CFOChat({
   };
 
   return (
-    <Card className="border-border/50 h-full w-full flex flex-col overflow-hidden">
+    <Card
+      className={cn(
+        "border-border/50 h-full w-full flex flex-col overflow-hidden",
+        isExpanded && "max-w-5xl mx-auto"
+      )}
+    >
       {!hideHeader && (
         <CardHeader className="border-b border-border/50 flex-shrink-0">
           <div className="flex items-center justify-between">
@@ -402,9 +407,19 @@ export function CFOChat({
           </div>
         </CardHeader>
       )}
-      <CardContent className="flex-1 flex flex-col p-0 min-h-0">
+      <CardContent
+        className={cn(
+          "flex-1 flex flex-col p-0 min-h-0",
+          isExpanded && "bg-card/60"
+        )}
+      >
         {/* Messages area - scrollable */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
+        <div
+          className={cn(
+            "flex-1 overflow-y-auto space-y-4 min-h-0",
+            isExpanded ? "p-6" : "p-4"
+          )}
+        >
           {messages.length === 0 && (
             <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
               Click "Load Sample" to see a sample conversation or ask a question below
@@ -417,7 +432,7 @@ export function CFOChat({
                   <div
                     className={cn(
                       "bg-primary text-primary-foreground rounded-lg px-4 py-3 text-sm",
-                      isExpanded ? "max-w-full" : "max-w-[85%]"
+                      isExpanded ? "max-w-3xl" : "max-w-[85%]"
                     )}
                   >
                     <div className="flex items-center gap-2 mb-1">
@@ -451,7 +466,7 @@ export function CFOChat({
                   <div
                     className={cn(
                       "bg-muted/50 border border-border/50 rounded-lg px-4 py-3 text-sm",
-                      isExpanded ? "max-w-full" : "max-w-[85%]"
+                      isExpanded ? "max-w-3xl" : "max-w-[85%]"
                     )}
                   >
                     <div className="flex items-center gap-2 mb-1">
@@ -468,7 +483,7 @@ export function CFOChat({
                   <div
                     className={cn(
                       "bg-accent/50 border border-accent rounded-lg px-4 py-3 text-sm",
-                      isExpanded ? "max-w-full" : "max-w-[85%]"
+                      isExpanded ? "max-w-3xl" : "max-w-[85%]"
                     )}
                   >
                     <div className="flex items-center gap-2 mb-2">
@@ -486,7 +501,7 @@ export function CFOChat({
                   <div
                     className={cn(
                       "bg-secondary border border-border rounded-lg px-4 py-3 text-sm",
-                      isExpanded ? "max-w-full" : "max-w-[85%]"
+                      isExpanded ? "max-w-3xl" : "max-w-[85%]"
                     )}
                   >
                     <div className="flex items-center gap-2 mb-2">
@@ -508,7 +523,7 @@ export function CFOChat({
                   <div
                     className={cn(
                       "bg-muted text-foreground rounded-lg px-4 py-3 text-sm",
-                      isExpanded ? "max-w-full" : "max-w-[85%]"
+                      isExpanded ? "max-w-3xl" : "max-w-[85%]"
                     )}
                   >
                     <div className="flex items-center gap-2 mb-2">
@@ -533,7 +548,10 @@ export function CFOChat({
                       })}
                     </div>
                     {message.visualizationData && (
-                      <ChatVisualization data={message.visualizationData} compact />
+                      <ChatVisualization
+                        data={message.visualizationData}
+                        compact={!isExpanded}
+                      />
                     )}
                   </div>
                 </div>
@@ -553,7 +571,12 @@ export function CFOChat({
         </div>
 
         {/* Input area - fixed at bottom */}
-        <div className="p-4 border-t border-border/50 space-y-2 flex-shrink-0">
+        <div
+          className={cn(
+            "border-t border-border/50 space-y-2 flex-shrink-0",
+            isExpanded ? "p-6" : "p-4"
+          )}
+        >
           {/* File previews */}
           {uploadedFiles.length > 0 && (
             <div className="flex flex-wrap gap-2 pb-2">
@@ -597,7 +620,10 @@ export function CFOChat({
             </Button>
             <Input 
               placeholder="Ask your CFO agent anything..."
-              className="bg-background"
+              className={cn(
+                "bg-background",
+                isExpanded ? "min-h-[44px]" : ""
+              )}
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
