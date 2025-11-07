@@ -1,4 +1,4 @@
-import { LayoutDashboard, Bot, FileText, Settings, BarChart3 } from "lucide-react";
+import { LayoutDashboard, FileText, Settings, BarChart3 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface SidebarProps {
@@ -9,7 +9,6 @@ interface SidebarProps {
 const menuItems = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
   { id: "data-analysis", label: "Data Analysis", icon: BarChart3 },
-  { id: "cfo-agent", label: "CFO Agent", icon: Bot },
   { id: "reports", label: "Reports", icon: FileText },
   { id: "settings", label: "Settings", icon: Settings },
 ];
