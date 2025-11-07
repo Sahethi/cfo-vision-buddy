@@ -8,6 +8,7 @@ const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Expose-Headers": "X-Session-Id", // Expose session ID header to frontend
 };
 
 // --- AWS Configuration ---
@@ -56,7 +57,7 @@ serve(async (req) => {
     // --- IMPORTANT FOR MEMORY ---
     // Your React app should send a 'sessionId' in the FormData
     // If it doesn't, every message will start a new conversation
-    const sessionId = formData.get("sessionId") as string || crypto.randomUUID();
+    const sessionId = (formData.get("sessionId") as string) || crypto.randomUUID();
 
     if (!message && files.length === 0) {
       return new Response(
@@ -108,19 +109,36 @@ serve(async (req) => {
         response: bedrockResponseText,
         visualizationData: null,
         traces: null,
+        sessionId: sessionId, // Include session ID in response body
       }),
       {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { 
+          ...corsHeaders, 
+          "Content-Type": "application/json",
+          "X-Session-Id": sessionId, // Include session ID in response headers
+        },
       },
     );
   } catch (err) {
     console.error("Error calling Bedrock Agent:", err);
+    // Note: We can't read formData again here as it's already been consumed
+    // Generate a new session ID for error responses
+    const errorSessionId = crypto.randomUUID();
+    
     // Return a detailed error to the client to help with debugging
     return new Response(
-      JSON.stringify({ error: err.message, stack: err.stack }),
+      JSON.stringify({ 
+        error: err instanceof Error ? err.message : "Unknown error", 
+        stack: err instanceof Error ? err.stack : undefined,
+        sessionId: errorSessionId,
+      }),
       {
         status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { 
+          ...corsHeaders, 
+          "Content-Type": "application/json",
+          "X-Session-Id": errorSessionId,
+        },
       },
     );
   }

@@ -241,6 +241,17 @@ export function CFOChat({
   uploadedFiles: externalUploadedFiles,
   setUploadedFiles: externalSetUploadedFiles,
 }: CFOChatProps = {}) {
+  // Get or create unified session ID (persisted in localStorage)
+  // This session ID is shared across dashboard and chat for consistent context
+  const getSessionId = (): string => {
+    const storageKey = "cfo-unified-session-id";
+    let sessionId = localStorage.getItem(storageKey);
+    if (!sessionId) {
+      sessionId = crypto.randomUUID();
+      localStorage.setItem(storageKey, sessionId);
+    }
+    return sessionId;
+  };
   // Use external state if provided, otherwise use internal state
   const [internalInputValue, setInternalInputValue] = useState("");
   const [internalMessages, setInternalMessages] = useState<ChatMessage[]>([]);
@@ -377,7 +388,6 @@ export function CFOChat({
       content: userInput || `Uploaded ${uploadedFiles.length} file(s)`,
       files: uploadedFiles.length > 0 ? [...uploadedFiles] : undefined,
     };
-    userMessage += " Provide the graph data in this JSON {\"\"}"
     setMessages(prev => [...prev, userMessage]);
     setInputValue("");
     setUploadedFiles([]);
@@ -391,6 +401,7 @@ export function CFOChat({
       // Prepare FormData for file uploads
       const formData = new FormData();
       formData.append('message', userInput);
+      formData.append('sessionId', getSessionId()); // Add session ID for conversation continuity
       
       // Add files if any
       filesToSend.forEach((file) => {
@@ -422,6 +433,11 @@ export function CFOChat({
       }
 
       const result = await response.json();
+      
+      // Log session ID from response headers for debugging
+      const sessionIdFromHeader = response.headers.get("X-Session-Id");
+      console.log("Response Headers - X-Session-Id:", sessionIdFromHeader);
+      console.log("All Response Headers:", Object.fromEntries(response.headers.entries()));
       
       // Parse Bedrock response - it might contain traces or direct response
       let parsedMessages: ChatMessage[] = [];
@@ -529,7 +545,7 @@ export function CFOChat({
     } catch (error) {
       console.error('Error calling Bedrock API:', error);
       const errorMessage: ChatMessage = {
-        type: "final_response",
+        type: "final_response", 
         content: error instanceof Error 
           ? `Sorry, I encountered an error: ${error.message}. Please check your API configuration and try again.`
           : "Sorry, I encountered an error processing your request. Please try again.",
@@ -549,15 +565,15 @@ export function CFOChat({
     >
       {!hideHeader && (
         <CardHeader className="border-b border-border/50 flex-shrink-0">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-xl font-semibold">Autonomous CFO Agent</CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-xl font-semibold">Autonomous CFO Agent</CardTitle>
             {showLoadSample && (
-              <Button onClick={handleLoadSample} variant="outline" size="sm">
-                Load Sample
-              </Button>
+          <Button onClick={handleLoadSample} variant="outline" size="sm">
+            Load Sample
+          </Button>
             )}
-          </div>
-        </CardHeader>
+        </div>
+      </CardHeader>
       )}
       <CardContent
         className={cn(

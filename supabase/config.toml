@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.cfo-agent]
 verify_jwt = false
+
+[functions.dashboard-metrics]
+verify_jwt = false
