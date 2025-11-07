@@ -53,9 +53,17 @@ function parseResponseForVisualization(response: string): any | null {
     const jsonMatch = response.match(/```json\s*([\s\S]*?)\s*```/);
     if (jsonMatch) {
       const parsed = JSON.parse(jsonMatch[1]);
-      // Check if it has graphData (compliance report format)
+      // Check for new format: requestType, chatOutput, graphData
+      if (parsed.requestType && parsed.graphData) {
+        return {
+          requestType: parsed.requestType.toLowerCase(),
+          chatOutput: parsed.chatOutput || response,
+          graphData: parsed.graphData
+        };
+      }
+      // Check if it has graphData (legacy compliance report format)
       if (parsed.graphData) {
-        return { type: "compliance", graphData: parsed.graphData };
+        return { requestType: "compliance", graphData: parsed.graphData };
       }
       // Check if it has data or type (standard format)
       if (parsed.data || parsed.type) {
@@ -65,8 +73,16 @@ function parseResponseForVisualization(response: string): any | null {
 
     // Try to parse if the entire response is JSON
     const parsed = JSON.parse(response);
+    // Check for new format: requestType, chatOutput, graphData
+    if (parsed.requestType && parsed.graphData) {
+      return {
+        requestType: parsed.requestType.toLowerCase(),
+        chatOutput: parsed.chatOutput || response,
+        graphData: parsed.graphData
+      };
+    }
     if (parsed.graphData) {
-      return { type: "compliance", graphData: parsed.graphData };
+      return { requestType: "compliance", graphData: parsed.graphData };
     }
     if (parsed.data || parsed.type) {
       return parsed;
@@ -100,8 +116,16 @@ function parseResponseForVisualization(response: string): any | null {
         try {
           const jsonStr = response.substring(jsonStart, jsonEnd);
           const parsed = JSON.parse(jsonStr);
+          // Check for new format
+          if (parsed.requestType && parsed.graphData) {
+            return {
+              requestType: parsed.requestType.toLowerCase(),
+              chatOutput: parsed.chatOutput || response,
+              graphData: parsed.graphData
+            };
+          }
           if (parsed.graphData) {
-            return { type: "compliance", graphData: parsed.graphData };
+            return { requestType: "compliance", graphData: parsed.graphData };
           }
         } catch (e) {
           // If that fails, try the regex approach
@@ -114,8 +138,16 @@ function parseResponseForVisualization(response: string): any | null {
     if (graphDataMatch) {
       try {
         const parsed = JSON.parse(graphDataMatch[0]);
+        // Check for new format
+        if (parsed.requestType && parsed.graphData) {
+          return {
+            requestType: parsed.requestType.toLowerCase(),
+            chatOutput: parsed.chatOutput || response,
+            graphData: parsed.graphData
+          };
+        }
         if (parsed.graphData) {
-          return { type: "compliance", graphData: parsed.graphData };
+          return { requestType: "compliance", graphData: parsed.graphData };
         }
       } catch (parseError) {
         // If parsing the matched string fails, try to extract just the graphData part
@@ -123,7 +155,7 @@ function parseResponseForVisualization(response: string): any | null {
         if (graphDataOnlyMatch) {
           try {
             const graphDataParsed = JSON.parse(graphDataOnlyMatch[1]);
-            return { type: "compliance", graphData: graphDataParsed };
+            return { requestType: "compliance", graphData: graphDataParsed };
           } catch (e) {
             // Ignore
           }
@@ -201,7 +233,19 @@ function parseBedrockTraces(traces: BedrockTrace[]): ChatMessage[] {
     // Final response to user
     if (orch.observation?.finalResponse?.text) {
       const responseText = orch.observation.finalResponse.text;
-      const visualizationData = parseResponseForVisualization(responseText);
+      let visualizationData = parseResponseForVisualization(responseText);
+      
+      // If no JSON structure found, still create visualization data from plain text
+      // This allows extraction of tables, metrics, and compliance data from text
+      if (!visualizationData) {
+        visualizationData = {
+          chatOutput: responseText,
+          // Let ChatVisualization extract tables, metrics, and compliance data
+        };
+      } else if (visualizationData && !visualizationData.chatOutput) {
+        // If we have visualizationData but no chatOutput, add the response text
+        visualizationData.chatOutput = responseText;
+      }
       
       messages.push({
         type: "final_response",
@@ -475,12 +519,30 @@ export function CFOChat({
           const parsed = parseResponseForVisualization(responseText);
           if (parsed) {
             visualizationData = parsed;
+            // Ensure chatOutput is included
+            if (!visualizationData.chatOutput) {
+              visualizationData.chatOutput = responseText;
+            }
+          } else {
+            // No JSON found, but still create visualization data from plain text
+            visualizationData = {
+              chatOutput: responseText,
+            };
           }
         }
         
         // Also check if response contains graphData directly
         if (!visualizationData && result.graphData) {
-          visualizationData = { type: "compliance", graphData: result.graphData };
+          visualizationData = { 
+            type: "compliance", 
+            graphData: result.graphData,
+            chatOutput: responseText 
+          };
+        }
+        
+        // If we have visualizationData but no chatOutput, add it
+        if (visualizationData && !visualizationData.chatOutput && responseText) {
+          visualizationData.chatOutput = responseText;
         }
         
         // Add rationale and agent calls if present
@@ -517,6 +579,14 @@ export function CFOChat({
         const parsed = parseResponseForVisualization(result);
         if (parsed) {
           visualizationData = parsed;
+          if (!visualizationData.chatOutput) {
+            visualizationData.chatOutput = result;
+          }
+        } else {
+          // No JSON found, create visualization data from plain text
+          visualizationData = {
+            chatOutput: result,
+          };
         }
       }
       else {
@@ -525,6 +595,13 @@ export function CFOChat({
         const parsed = parseResponseForVisualization(responseText);
         if (parsed) {
           visualizationData = parsed;
+          if (!visualizationData.chatOutput) {
+            visualizationData.chatOutput = responseText;
+          }
+        } else {
+          visualizationData = {
+            chatOutput: responseText,
+          };
         }
       }
       

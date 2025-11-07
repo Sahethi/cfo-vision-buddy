@@ -1,0 +1,9 @@
+{
+  "requestType": "Compliance",
+  "chatOutput": "# Compliance Report - Financial Reports\n\n## Executive Summary\n\nBased on the analysis of your financial reports, here's a comprehensive compliance overview:\n\n### Overall Compliance Status\n- **Total Transactions Analyzed**: 164\n- **Compliant Transactions**: 150 (91.5%)\n- **Non-Compliant Transactions**: 14 (8.5%)\n\n## Key Findings\n\n### ✅ Compliant Areas\n- **Documentation**: All major transactions have proper documentation\n- **Approval Workflows**: Manager approvals are in place for transactions over $5,000\n- **Vendor Compliance**: 95% of vendors meet compliance requirements\n\n### ⚠️ Areas Requiring Attention\n- **14 transactions** flagged for non-compliance\n- **Missing Documentation**: 3 transactions lack required receipts\n- **Policy Violations**: 5 transactions exceed approval limits\n- **Vendor Issues**: 2 vendors have incomplete tax documentation\n\n## Recommendations\n\n1. **Immediate Action Required**: Review the 14 non-compliant transactions\n2. **Documentation**: Ensure all transactions have proper receipts and invoices\n3. **Approval Process**: Strengthen approval workflows for high-value transactions\n4. **Vendor Management**: Update vendor documentation for 2 vendors\n\n## Next Steps\n\n- Schedule a review meeting to address non-compliant items\n- Update compliance policies based on findings\n- Implement automated compliance checks for future transactions",
+  "graphData": {
+    "compliantTransactions": 150,
+    "nonCompliantTransactions": 14
+  }
+}
+
