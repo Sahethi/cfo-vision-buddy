@@ -2,3 +2,6 @@ project_id = "msdaegozfihbeiegwzvq"
 
 [functions.process-data]
 verify_jwt = false
+
+[functions.cfo-agent]
+verify_jwt = false

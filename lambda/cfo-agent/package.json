@@ -1,0 +1,13 @@
+{
+  "name": "cfo-agent-lambda",
+  "version": "1.0.0",
+  "description": "AWS Lambda function for CFO Agent Bedrock integration",
+  "main": "index.js",
+  "scripts": {
+    "deploy": "zip -r function.zip ."
+  },
+  "dependencies": {
+    "@aws-sdk/client-bedrock-runtime": "^3.0.0"
+  }
+}
+

@@ -59,6 +59,41 @@ This project is built with:
 - React
 - shadcn-ui
 - Tailwind CSS
+- Amazon Bedrock (for AI agent functionality)
+
+## Environment Configuration
+
+To connect this UI to Amazon Bedrock, you need to set up environment variables:
+
+1. **Create a `.env` file** in the root directory (copy from `.env.example` if available)
+
+2. **Required Environment Variables:**
+   ```env
+   # Supabase Configuration (if using Supabase)
+   VITE_SUPABASE_URL=your_supabase_project_url
+   VITE_SUPABASE_PUBLISHABLE_KEY=your_supabase_anon_key
+   
+   # Bedrock API Endpoint
+   # Option 1: Supabase Edge Function
+   VITE_BEDROCK_API_URL=https://your-project.supabase.co/functions/v1/cfo-agent
+   
+   # Option 2: Custom API Gateway/Lambda
+   # VITE_BEDROCK_API_URL=https://your-api-gateway-url.amazonaws.com/bedrock
+   ```
+
+3. **Backend Requirements:**
+   - Your backend endpoint should accept POST requests with:
+     - `message`: string (user's text input)
+     - `files`: File[] (optional uploaded files)
+   - Response format should be one of:
+     - **Bedrock Traces Format**: `{ traces: BedrockTrace[] }`
+     - **Direct Response**: `{ response: string, visualizationData?: any }`
+     - **Structured Response**: `{ message: string, data?: any, type?: string }`
+
+4. **Backend Implementation:**
+   - The backend must handle Bedrock API calls (credentials should be on the backend, not in the UI)
+   - Process files if uploaded
+   - Return response in one of the supported formats above
 
 ## How can I deploy this project?
 

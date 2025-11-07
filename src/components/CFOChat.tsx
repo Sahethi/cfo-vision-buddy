@@ -52,11 +52,22 @@ function parseResponseForVisualization(response: string): any | null {
     // Look for JSON blocks in markdown code blocks
     const jsonMatch = response.match(/```json\s*([\s\S]*?)\s*```/);
     if (jsonMatch) {
-      return JSON.parse(jsonMatch[1]);
+      const parsed = JSON.parse(jsonMatch[1]);
+      // Check if it has graphData (compliance report format)
+      if (parsed.graphData) {
+        return { type: "compliance", graphData: parsed.graphData };
+      }
+      // Check if it has data or type (standard format)
+      if (parsed.data || parsed.type) {
+        return parsed;
+      }
     }
 
     // Try to parse if the entire response is JSON
     const parsed = JSON.parse(response);
+    if (parsed.graphData) {
+      return { type: "compliance", graphData: parsed.graphData };
+    }
     if (parsed.data || parsed.type) {
       return parsed;
     }
@@ -64,8 +75,63 @@ function parseResponseForVisualization(response: string): any | null {
     // Not JSON, continue
   }
 
-  // Try to find JSON-like structures in the response
+  // Try to find JSON-like structures in the response (including graphData)
   try {
+    // Look for graphData structure - try to match the full JSON object
+    // This regex looks for { ... "graphData": { ... } ... } with better matching
+    // First try to find a complete JSON object that contains graphData
+    const jsonStart = response.indexOf('{');
+    if (jsonStart !== -1) {
+      // Try to find the matching closing brace
+      let braceCount = 0;
+      let jsonEnd = -1;
+      for (let i = jsonStart; i < response.length; i++) {
+        if (response[i] === '{') braceCount++;
+        if (response[i] === '}') {
+          braceCount--;
+          if (braceCount === 0) {
+            jsonEnd = i + 1;
+            break;
+          }
+        }
+      }
+      
+      if (jsonEnd > jsonStart) {
+        try {
+          const jsonStr = response.substring(jsonStart, jsonEnd);
+          const parsed = JSON.parse(jsonStr);
+          if (parsed.graphData) {
+            return { type: "compliance", graphData: parsed.graphData };
+          }
+        } catch (e) {
+          // If that fails, try the regex approach
+        }
+      }
+    }
+    
+    // Fallback to regex matching
+    const graphDataMatch = response.match(/\{[\s\S]*?"graphData"[\s\S]*?\}/);
+    if (graphDataMatch) {
+      try {
+        const parsed = JSON.parse(graphDataMatch[0]);
+        if (parsed.graphData) {
+          return { type: "compliance", graphData: parsed.graphData };
+        }
+      } catch (parseError) {
+        // If parsing the matched string fails, try to extract just the graphData part
+        const graphDataOnlyMatch = response.match(/"graphData"\s*:\s*(\{[\s\S]*?\})/);
+        if (graphDataOnlyMatch) {
+          try {
+            const graphDataParsed = JSON.parse(graphDataOnlyMatch[1]);
+            return { type: "compliance", graphData: graphDataParsed };
+          } catch (e) {
+            // Ignore
+          }
+        }
+      }
+    }
+    
+    // Look for standard data structure
     const jsonLikeMatch = response.match(/\{[\s\S]*"data"[\s\S]*\}/);
     if (jsonLikeMatch) {
       return JSON.parse(jsonLikeMatch[0]);
@@ -311,81 +377,162 @@ export function CFOChat({
       content: userInput || `Uploaded ${uploadedFiles.length} file(s)`,
       files: uploadedFiles.length > 0 ? [...uploadedFiles] : undefined,
     };
-    
+    userMessage += " Provide the graph data in this JSON {\"\"}"
     setMessages(prev => [...prev, userMessage]);
     setInputValue("");
     setUploadedFiles([]);
     setIsProcessing(true);
     
     try {
-      // In production, replace this with your actual API call
-      // Example:
-      // const formData = new FormData();
-      // formData.append('message', userInput);
-      // filesToSend.forEach((file) => {
-      //   formData.append('files', file.file);
-      // });
-      // const response = await fetch('/api/cfo-agent', { method: 'POST', body: formData });
-      // const result = await response.json();
+      // Get API URL from environment variable
+      const apiUrl = import.meta.env.VITE_BEDROCK_API_URL || 
+                     `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/cfo-agent`;
       
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Prepare FormData for file uploads
+      const formData = new FormData();
+      formData.append('message', userInput);
       
-      // Sample response - in production, use result from API
-      let responseText = "I've received your query. In a production environment, this would process your request through the financial analysis agents.";
-      let visualizationData: any = undefined;
+      // Add files if any
+      filesToSend.forEach((file) => {
+        formData.append('files', file.file);
+      });
       
-      // Check if the query might need visualization
-      const needsVisualization = userInput.toLowerCase().includes('chart') || 
-                                 userInput.toLowerCase().includes('graph') ||
-                                 userInput.toLowerCase().includes('visualize') ||
-                                 userInput.toLowerCase().includes('plot') ||
-                                 filesToSend.length > 0;
-
-      if (needsVisualization) {
-        // Sample visualization data - in production, this would come from your API
-        visualizationData = {
-          type: "financial",
-          data: [
-            { date: "2025-01-01", amount: 5000, category: "Sales", type: "income" },
-            { date: "2025-01-01", amount: 1200, category: "Rent", type: "expense" },
-            { date: "2025-01-02", amount: 3500, category: "Sales", type: "income" },
-            { date: "2025-01-02", amount: 800, category: "Supplies", type: "expense" },
-            { date: "2025-01-03", amount: 4200, category: "Sales", type: "income" },
-            { date: "2025-01-03", amount: 600, category: "Utilities", type: "expense" },
-          ]
-        };
-        // Provide a concise summary instead of verbose JSON
-        const totalIncome = visualizationData.data
-          .filter((d: any) => d.type === "income")
-          .reduce((sum: number, d: any) => sum + d.amount, 0);
-        const totalExpense = visualizationData.data
-          .filter((d: any) => d.type === "expense")
-          .reduce((sum: number, d: any) => sum + d.amount, 0);
-        responseText = `I've analyzed your financial data.\n\n**Summary:**\n- Total Income: $${totalIncome.toLocaleString()}\n- Total Expenses: $${totalExpense.toLocaleString()}\n- Net: $${(totalIncome - totalExpense).toLocaleString()}\n\nHere are the visualizations:`;
+      // Make API call to Bedrock backend
+      const headers: HeadersInit = {};
+      
+      // Add Supabase auth header if using Supabase function
+      if (apiUrl.includes('supabase.co/functions')) {
+        const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+        if (supabaseKey) {
+          headers['apikey'] = supabaseKey;
+          headers['Authorization'] = `Bearer ${supabaseKey}`;
+        }
       }
       
-      // If the API returns JSON directly, parse it
-      // Example: if (result.visualizationData) { visualizationData = result.visualizationData; }
-      // Or if the response text contains JSON, parse it
-      if (!visualizationData && responseText) {
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers,
+        body: formData,
+        // Don't set Content-Type header - browser will set it with boundary for FormData
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(errorData.error || `API error: ${response.status} ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      
+      // Parse Bedrock response - it might contain traces or direct response
+      let parsedMessages: ChatMessage[] = [];
+      let visualizationData: any = undefined;
+      let responseText = "";
+      
+      // Check if response contains Bedrock traces
+      if (result.traces && Array.isArray(result.traces)) {
+        parsedMessages = parseBedrockTraces(result.traces);
+        
+        // Extract final response and visualization data from parsed messages
+        const finalResponse = parsedMessages.find(m => m.type === "final_response");
+        if (finalResponse) {
+          responseText = finalResponse.content;
+          visualizationData = finalResponse.visualizationData;
+        }
+      } 
+      // If response is direct (not traces format)
+      else if (result.response || result.message || result.text) {
+        responseText = result.response || result.message || result.text;
+        
+        // Check for visualization data in response
+        if (result.visualizationData) {
+          visualizationData = result.visualizationData;
+        } else if (result.data) {
+          // If data is provided, it might be for visualization
+          visualizationData = {
+            type: result.type || "financial",
+            data: result.data
+          };
+        }
+        
+        // Parse visualization from response text if present
+        if (!visualizationData && responseText) {
+          const parsed = parseResponseForVisualization(responseText);
+          if (parsed) {
+            visualizationData = parsed;
+          }
+        }
+        
+        // Also check if response contains graphData directly
+        if (!visualizationData && result.graphData) {
+          visualizationData = { type: "compliance", graphData: result.graphData };
+        }
+        
+        // Add rationale and agent calls if present
+        if (result.rationale) {
+          parsedMessages.push({
+            type: "rationale",
+            content: result.rationale
+          });
+        }
+        
+        if (result.agentCalls && Array.isArray(result.agentCalls)) {
+          result.agentCalls.forEach((call: any) => {
+            parsedMessages.push({
+              type: "agent_call",
+              content: call.input || call.content,
+              agentName: call.agentName || call.agent
+            });
+          });
+        }
+        
+        if (result.agentResponses && Array.isArray(result.agentResponses)) {
+          result.agentResponses.forEach((resp: any) => {
+            parsedMessages.push({
+              type: "agent_response",
+              content: resp.output || resp.content,
+              agentName: resp.agentName || resp.agent
+            });
+          });
+        }
+      }
+      // Fallback: treat entire response as text
+      else if (typeof result === 'string') {
+        responseText = result;
+        const parsed = parseResponseForVisualization(result);
+        if (parsed) {
+          visualizationData = parsed;
+        }
+      }
+      else {
+        // Try to extract meaningful data from response
+        responseText = JSON.stringify(result, null, 2);
         const parsed = parseResponseForVisualization(responseText);
         if (parsed) {
           visualizationData = parsed;
         }
       }
-
+      
+      // Add all parsed messages (rationale, agent calls, etc.) except final response
+      const nonFinalMessages = parsedMessages.filter(m => m.type !== "final_response");
+      if (nonFinalMessages.length > 0) {
+        setMessages(prev => [...prev, ...nonFinalMessages]);
+      }
+      
+      // Add final response message
       const responseMessage: ChatMessage = {
         type: "final_response",
-        content: responseText,
+        content: responseText || "I've processed your request.",
         visualizationData: visualizationData,
       };
 
       setMessages(prev => [...prev, responseMessage]);
     } catch (error) {
+      console.error('Error calling Bedrock API:', error);
       const errorMessage: ChatMessage = {
         type: "final_response",
-        content: "Sorry, I encountered an error processing your request. Please try again.",
+        content: error instanceof Error 
+          ? `Sorry, I encountered an error: ${error.message}. Please check your API configuration and try again.`
+          : "Sorry, I encountered an error processing your request. Please try again.",
       };
       setMessages(prev => [...prev, errorMessage]);
     } finally {
