@@ -15,7 +15,21 @@ const NavLink = forwardRef<HTMLAnchorElement, NavLinkCompatProps>(
         ref={ref}
         to={to}
         className={({ isActive, isPending }) =>
-          cn(className, isActive && activeClassName, isPending && pendingClassName)
+          cn(
+            // Base responsive styles
+            "text-sm md:text-base",
+            "px-2 py-1.5 md:px-3 md:py-2",
+            "rounded-md",
+            "transition-colors",
+            "block w-full md:w-auto",
+            "text-center md:text-left",
+            // User-provided className
+            className,
+            // Active state
+            isActive && activeClassName,
+            // Pending state
+            isPending && pendingClassName
+          )
         }
         {...props}
       />

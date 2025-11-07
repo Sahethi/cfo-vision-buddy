@@ -1,10 +1,11 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Send, Brain, User } from "lucide-react";
+import { Send, Brain, User, Paperclip, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Badge } from "@/components/ui/badge";
+import { ChatVisualization } from "./ChatVisualization";
 
 interface BedrockTrace {
   trace?: {
@@ -28,11 +29,51 @@ interface BedrockTrace {
   };
 }
 
+interface UploadedFile {
+  id: string;
+  name: string;
+  file: File;
+  preview?: string;
+}
+
 interface ChatMessage {
   type: "user" | "rationale" | "agent_call" | "agent_response" | "final_response";
   content: string;
   agentName?: string;
   timestamp?: string;
+  visualizationData?: any; // JSON data for visualization
+  files?: UploadedFile[]; // Files attached to user messages
+}
+
+function parseResponseForVisualization(response: string): any | null {
+  try {
+    // Try to parse JSON from the response
+    // Look for JSON blocks in markdown code blocks
+    const jsonMatch = response.match(/```json\s*([\s\S]*?)\s*```/);
+    if (jsonMatch) {
+      return JSON.parse(jsonMatch[1]);
+    }
+
+    // Try to parse if the entire response is JSON
+    const parsed = JSON.parse(response);
+    if (parsed.data || parsed.type) {
+      return parsed;
+    }
+  } catch (e) {
+    // Not JSON, continue
+  }
+
+  // Try to find JSON-like structures in the response
+  try {
+    const jsonLikeMatch = response.match(/\{[\s\S]*"data"[\s\S]*\}/);
+    if (jsonLikeMatch) {
+      return JSON.parse(jsonLikeMatch[0]);
+    }
+  } catch (e) {
+    // Ignore
+  }
+
+  return null;
 }
 
 function parseBedrockTraces(traces: BedrockTrace[]): ChatMessage[] {
@@ -92,9 +133,13 @@ function parseBedrockTraces(traces: BedrockTrace[]): ChatMessage[] {
 
     // Final response to user
     if (orch.observation?.finalResponse?.text) {
+      const responseText = orch.observation.finalResponse.text;
+      const visualizationData = parseResponseForVisualization(responseText);
+      
       messages.push({
         type: "final_response",
-        content: orch.observation.finalResponse.text,
+        content: responseText,
+        visualizationData: visualizationData || undefined,
       });
     }
   }
@@ -106,6 +151,40 @@ export function CFOChat() {
   const [inputValue, setInputValue] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []) as File[];
+    files.forEach((file) => {
+      const fileId = `${Date.now()}-${Math.random()}`;
+      const uploadedFile: UploadedFile = {
+        id: fileId,
+        name: file.name,
+        file: file,
+      };
+
+      // Create preview for images
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          setUploadedFiles((prev) =>
+            prev.map((f) =>
+              f.id === fileId ? { ...f, preview: event.target?.result as string } : f
+            )
+          );
+        };
+        reader.readAsDataURL(file);
+      }
+
+      setUploadedFiles((prev) => [...prev, uploadedFile]);
+    });
+  };
+
+  const removeFile = (fileId: string) => {
+    setUploadedFiles((prev) => prev.filter((f) => f.id !== fileId));
+  };
+
 
   const handleLoadSample = () => {
     // Sample trace data for demonstration
@@ -177,22 +256,91 @@ export function CFOChat() {
     setMessages(parsedMessages);
   };
 
-  const handleSend = () => {
-    if (!inputValue.trim()) return;
+  const handleSend = async () => {
+    if (!inputValue.trim() && uploadedFiles.length === 0) return;
     
-    // Add user message
-    setMessages(prev => [...prev, { type: "user", content: inputValue }]);
+    const userInput = inputValue.trim();
+    const filesToSend = [...uploadedFiles];
+    
+    // Add user message with files
+    const userMessage: ChatMessage = {
+      type: "user",
+      content: userInput || `Uploaded ${uploadedFiles.length} file(s)`,
+      files: uploadedFiles.length > 0 ? [...uploadedFiles] : undefined,
+    };
+    
+    setMessages(prev => [...prev, userMessage]);
     setInputValue("");
+    setUploadedFiles([]);
     setIsProcessing(true);
     
-    // Simulate processing (in real implementation, this would call your edge function)
-    setTimeout(() => {
-      setMessages(prev => [...prev, { 
-        type: "final_response", 
-        content: "I've received your query. In a production environment, this would process your request through the financial analysis agents." 
-      }]);
+    try {
+      // In production, replace this with your actual API call
+      // Example:
+      // const formData = new FormData();
+      // formData.append('message', userInput);
+      // filesToSend.forEach((file) => {
+      //   formData.append('files', file.file);
+      // });
+      // const response = await fetch('/api/cfo-agent', { method: 'POST', body: formData });
+      // const result = await response.json();
+      
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // Sample response - in production, use result from API
+      let responseText = "I've received your query. In a production environment, this would process your request through the financial analysis agents.";
+      let visualizationData: any = undefined;
+      
+      // Check if the query might need visualization
+      const needsVisualization = userInput.toLowerCase().includes('chart') || 
+                                 userInput.toLowerCase().includes('graph') ||
+                                 userInput.toLowerCase().includes('visualize') ||
+                                 userInput.toLowerCase().includes('plot') ||
+                                 filesToSend.length > 0;
+
+      if (needsVisualization) {
+        // Sample visualization data - in production, this would come from your API
+        visualizationData = {
+          type: "financial",
+          data: [
+            { date: "2025-01-01", amount: 5000, category: "Sales", type: "income" },
+            { date: "2025-01-01", amount: 1200, category: "Rent", type: "expense" },
+            { date: "2025-01-02", amount: 3500, category: "Sales", type: "income" },
+            { date: "2025-01-02", amount: 800, category: "Supplies", type: "expense" },
+            { date: "2025-01-03", amount: 4200, category: "Sales", type: "income" },
+            { date: "2025-01-03", amount: 600, category: "Utilities", type: "expense" },
+          ]
+        };
+        responseText = "I've analyzed your data. Here's the visualization:\n\n```json\n" + JSON.stringify(visualizationData, null, 2) + "\n```";
+      }
+      
+      // If the API returns JSON directly, parse it
+      // Example: if (result.visualizationData) { visualizationData = result.visualizationData; }
+      // Or if the response text contains JSON, parse it
+      if (!visualizationData && responseText) {
+        const parsed = parseResponseForVisualization(responseText);
+        if (parsed) {
+          visualizationData = parsed;
+        }
+      }
+
+      const responseMessage: ChatMessage = {
+        type: "final_response",
+        content: responseText,
+        visualizationData: visualizationData,
+      };
+
+      setMessages(prev => [...prev, responseMessage]);
+    } catch (error) {
+      const errorMessage: ChatMessage = {
+        type: "final_response",
+        content: "Sorry, I encountered an error processing your request. Please try again.",
+      };
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
       setIsProcessing(false);
-    }, 1000);
+    }
   };
 
   return (
@@ -223,6 +371,23 @@ export function CFOChat() {
                       <span className="text-xs font-medium">You</span>
                     </div>
                     {message.content}
+                    {message.files && message.files.length > 0 && (
+                      <div className="mt-2 space-y-1">
+                        {message.files.map((file) => (
+                          <div key={file.id} className="flex items-center gap-2 text-xs bg-primary/20 rounded p-2">
+                            <Paperclip className="w-3 h-3" />
+                            <span className="truncate">{file.name}</span>
+                            {file.preview && (
+                              <img 
+                                src={file.preview} 
+                                alt={file.name}
+                                className="max-w-[100px] max-h-[100px] object-contain rounded"
+                              />
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -277,10 +442,17 @@ export function CFOChat() {
                       <span className="text-xs font-medium">CFO Agent</span>
                     </div>
                     <div className="prose prose-sm max-w-none">
-                      {message.content.split('\n').map((line, i) => (
-                        line.trim() && <p key={i} className="mb-1">{line}</p>
-                      ))}
+                      {message.content.split('\n').map((line, i) => {
+                        // Skip JSON code blocks in display (they're used for visualization)
+                        if (line.trim().startsWith('```json') || line.trim() === '```') {
+                          return null;
+                        }
+                        return line.trim() && <p key={i} className="mb-1">{line}</p>;
+                      })}
                     </div>
+                    {message.visualizationData && (
+                      <ChatVisualization data={message.visualizationData} compact />
+                    )}
                   </div>
                 </div>
               )}
@@ -299,21 +471,61 @@ export function CFOChat() {
         </div>
 
         {/* Input area */}
-        <div className="p-4 border-t border-border/50">
+        <div className="p-4 border-t border-border/50 space-y-2">
+          {/* File previews */}
+          {uploadedFiles.length > 0 && (
+            <div className="flex flex-wrap gap-2 pb-2">
+              {uploadedFiles.map((file) => (
+                <div
+                  key={file.id}
+                  className="flex items-center gap-2 bg-muted rounded-lg px-2 py-1.5 text-xs"
+                >
+                  <Paperclip className="w-3 h-3" />
+                  <span className="max-w-[150px] truncate">{file.name}</span>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-4 w-4"
+                    onClick={() => removeFile(file.id)}
+                  >
+                    <X className="w-3 h-3" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+          
           <div className="flex gap-2">
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileSelect}
+              multiple
+              className="hidden"
+              accept=".csv,.json,.xlsx,.xls,.pdf,image/*"
+            />
+            <Button
+              variant="outline"
+              size="icon"
+              className="shrink-0"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isProcessing}
+            >
+              <Paperclip className="w-4 h-4" />
+            </Button>
             <Input 
               placeholder="Ask your CFO agent anything..."
               className="bg-background"
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+              onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
               disabled={isProcessing}
             />
             <Button 
               size="icon" 
               className="shrink-0"
               onClick={handleSend}
-              disabled={isProcessing || !inputValue.trim()}
+              disabled={isProcessing || (!inputValue.trim() && uploadedFiles.length === 0)}
             >
               <Send className="w-4 h-4" />
             </Button>
